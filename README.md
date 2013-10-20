@@ -1,4 +1,4 @@
-hcs  -  to coding html simple
+hcs  -  to quickly build HTML code
 =====
 
 快速构建html代码的命令行编辑器工具
