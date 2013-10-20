@@ -29,6 +29,7 @@
 	left:-1px;
 	background:orange;
 	color:#000;
+	cursor: pointer;
 }
 
 .hcs_dev{
@@ -36,9 +37,25 @@
 	margin: 10px !important;
 	position: relative !important;
 	border: 1px #ccc dashed !important;
+	list-style: none !important;
+	display: block!important;
+}
+span.hcs_dev,
+a.hcs_dev{
+	display: block;
+}
+
+body.hcs_dev{
+	margin-bottom: 50px;
 }
 .hcs_current{
+
 	border: dashed 1px #000 !important;
+}
+.hcs_place{
+	height: 40px;
+	width: 100%;
+	display: block;
 }
 /*
 -webkit-transition: opacity 0.3s ease;

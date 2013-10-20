@@ -6,45 +6,53 @@
 KISSY.add('hcs',function (S) {
 	var $ = S.all;
 	var D = S.DOM;
-	function HCS(){
+	function HCS(config){
+		this.config = config||{};
 		this.current = null;
 	};
 	HCS.prototype.init = function(first_argument) {
 		this.view();
 		this.event();
+		this.tool();
 	};
 	HCS.prototype.view = function(first_argument) {
 		var self = this;
 		this.tpl = {
 			wrap:"<hcs class='hcs_wrap'></hcs>",
+			place:"<hcs class='hcs_place'></hcs>",
 			input:"<input type='text' class='hcs_input' placeholder='BODY' />"
 		};
 
 		this.$wrap = $(this.tpl.wrap);
 		this.$input = $(this.tpl.input);
 		this.$wrap.append(this.$input);
-		$("body").after(this.$wrap);
-
 		if(localStorage.hcs){
-			$("body").html(localStorage.hcs);
+			//document.getElementsByTagName("html")[0].innerHTML = localStorage.hcs;
 		}
+
+		$("body").after(this.$wrap).after($(this.tpl.place));
 
 		this.current = $("body");
 
 		this.view.current = function(){
-			$(document).all(".hcs_current")
+			$("html").all(".hcs_current")
 				.removeClass("hcs_current")
-				.removeAttr("contenteditable");
+				//.removeAttr("contenteditable");
 			self.current.addClass("hcs_current");
-			self.current.attr('contenteditable',true);
+			//self.current.attr('contenteditable',true);
 		};
 		this.view.uncurrent = function(){
-			$(document).all(".hcs_current")
+			$("html").all(".hcs_current")
 				.removeClass("hcs_current")
-				.removeAttr("contenteditable");
+				//.removeAttr("contenteditable");
 		};
 		this.view.addMark = function(dom){
-			var mark = $("<span class='hcs_dev_span'></span>");
+			var mark;
+			if($(dom).one('.hcs_dev_span')){
+				mark = $(dom).one('.hcs_dev_span');
+			}else{
+				mark = $("<hcs class='hcs_dev_span'></hcs>");
+			}
 			var id = $(dom).attr("id");
 			var clas = $(dom).attr("class");
 			var tagName = $(dom)[0].tagName;
@@ -61,7 +69,7 @@ KISSY.add('hcs',function (S) {
 				if($(dom).hasClass(".hcs_dev")||$(dom).hasClass(".hcs_dev_span")){
 					return;
 				}
-				if($(dom)[0].tagName=="HCS"||$(dom).attr("class")=="hcs_input"){
+				if($(dom)[0].tagName=="SCRIPT"||$(dom)[0].tagName=="HCS"||$(dom).attr("class")=="hcs_input"){
 					return;
 				}
 				self.view.addMark(dom);
@@ -72,8 +80,10 @@ KISSY.add('hcs',function (S) {
 		};
 		this.view.undev = function(){
 			self.view.uncurrent();
-			$(document).all(".hcs_dev").removeClass("hcs_dev");
-			$(document).all(".hcs_dev_span").remove();
+			$("html").all(".hcs_dev").removeClass("hcs_dev");
+			$("html").all(".hcs_dev_span").remove();
+			$("hcs").remove();
+			return;
 		};
 		this.view.dev();
 	};
@@ -89,7 +99,18 @@ KISSY.add('hcs',function (S) {
 			}
 			
 		}).fire("focus");
-
+		$(document).on("click",function(e){
+			if($(e.target).hasClass("hcs_dev_span")){
+				self.tool._setcur($(e.target).parent());
+				self.$input.fire("focus");
+			}
+		});
+		$(document).on("keydown",function(e){
+			self.$input.fire("focus");
+		});
+		window.onbeforeunload=function(){
+			return "如果还未保存，请执行命令 save";
+		}
 		self._command_history = [];
 		this.$input.on("keydown",function(e){
 			if(e.keyCode == 38){
@@ -114,19 +135,24 @@ KISSY.add('hcs',function (S) {
 				self._i++;
 			}
 		});
+
+		
 		self._catchCommand = function(value){
-			if(self._command_history[self._command_history.length-1] == value){
-				return;
+			if(self._command_history[self._command_history.length-1] != value){
+				self._command_history.push(value);
 			}
-			self._command_history.push(value);
 			self._i = self._command_history.length;
 		};
+		/*
 		self._keyboard = function(downcallback,upCallback){
 			var ele = this;
 			var keyboardObject = {};
 			var keyArray = [];
 			var keyDownFn = function(e){   
 				var code = e.keyCode;
+				if(keyboardObject[code]){
+					return;
+				}
 				keyboardObject[code]=setInterval(function(){
 					downcallback.apply(ele[0],[keyboardObject]);
 				},10);
@@ -141,22 +167,21 @@ KISSY.add('hcs',function (S) {
 			$(document).on("keydown",keyDownFn);
 			$(document).on("keyup",keyUpFn);
 		};
-
+		
 		self._keyboard.apply(this.$input,[function(code){
 			if(code[17]&&code[90]){
 				// ctrl + z;
+				clearInterval(code[90])
 				console.log("cz");
+				return false;
 			}
 		},function(){
 		}]);
+		*/
 	};
-	HCS.prototype.render = function(value){
+	HCS.prototype.tool = function(){
 		var self = this;
-		self.command = {
-			rship:["parent","children","next","prev"],
-			action:["append","before","after","prepend"]
-		};
-		self._setcur = function(value,type){
+		self.tool._setcur = function(value,type){
 			// 属于节点关系
 			if(!value){
 				return;
@@ -172,26 +197,28 @@ KISSY.add('hcs',function (S) {
 				var id = self.current.attr("id");
 				var clas = self.current.attr("class");
 				var index = self.current.index();
-
 				var tagName = self.current[0].tagName;
 
 				if(id) self.$input.attr("placeholder",id);
 				else if(clas) self.$input.attr("placeholder",tagName+"."+clas);
 				else self.$input.attr("placeholder",tagName);
 			}
-			this.view.current();
+			self.view.current();
 		};
-		self._setAttr = function(value){
+		self.tool._setAttr = function(value){
 			// 解析字符串
-			var ids = value.match(/^#[a-z]*/g);
-			var clas = value.match(/\.[a-z]*/g);
-			var atrs = value.match(/&[a-z\d]*=[a-z\d#_-]*|&[a-z\d]*/g);
+			var ids = value.match(/^#[a-zA-Z_]*/g);
+			var clas = value.match(/\.[a-zA-Z_]*/g);
+			var atrs = value.match(/&[a-zA-Z_\d]*=[a-zA-Z_\d#_-]*|&[a-zA-Z_\d]*/g);
 
 			if(ids&&ids.length>0){
-				self.current.attr("id",ids[0]);
+				self.current.attr("id",ids[0].replace("#",""));
 			}
 			if(clas&&clas.length>0){
-				self.current.attr('class',clas.join("").replace(/\./g," "));
+				for(var i=0;i<clas.length;i++){
+					self.current.removeAttr("class");
+					self.current.addClass(clas[i].replace(".",""));
+				}
 			}
 			if(atrs&&atrs.length>0){
 				for(var i=0,len=atrs.length;i<len;i++){
@@ -201,13 +228,27 @@ KISSY.add('hcs',function (S) {
 				}
 			}
 		};
-		self._getEl = function(str){
-			if($(str).length&& $(str)[0]!=self.current[0] ){
-				return $(str);
+		self.tool._getEl = function(str){
+			if(str.indexOf("--")!=-1){
+				str = str.replace("--","");
+				if(str.indexOf(":")!=-1){
+					var arr = str.split(":");
+
+					return $($(arr[0])[arr[1]]);
+				}
+				if($(str).length&& $(str)[0]!=self.current[0] ){
+
+					return $(str);
+				}
 			}
 			var temp = "<";
+			var index = (str.indexOf(".")+1)||(str.indexOf("&")+1)||(str.indexOf("#")+1);
+
+			// 先把tagName取到
+			temp+=str.substring(0,index-1);
+
 			if(str.indexOf(".")!=-1){
-				temp+=str.split(".")[0]+" class = "+str.match(/\.[a-z]*/g).join("").replace(/\./g,"");
+				temp+=" class = "+str.match(/\.[a-z]*/g).join("").replace(/\./g,"");
 			}
 			if(str.indexOf("#")!=-1){
 
@@ -235,68 +276,83 @@ KISSY.add('hcs',function (S) {
 				return str;
 			}
 		};
+	};
+	
+	HCS.prototype.render = function(value){
+		var self = this;
+		self.command = {
+			rship:["parent","children","next","prev"],
+			action:["append","before","after","prepend"]
+		};
+		
 
 		var arr = value.split(" ");
 
 		if(S.inArray(arr[0],self.command.rship)){
 			// 通过亲属关系得到指定对象
-			self._setcur(arr[0],"relative");
+			self.tool._setcur(arr[0],"relative");
 		}
 
 		if(arr[0]=="cd"){
 			// 通过已知对象特征得到指定对象
-			self._setcur(arr[1]);
+			self.tool._setcur(arr[1]);
 		}
 		
 		if("#.&".indexOf(value.charAt(0))!=-1){
 			// 对当前对象设置属性
-			self._setAttr(arr[0]);
+			self.tool._setAttr(arr[0]);
 		}
 		if(S.inArray(arr[0],self.command.action)){
 			// 插入或更改节点
-			var str = value.replace(eval("/"+arr[0]+"[ ]*/g"),"");
+			var str = value.replace(arr[0]+" ","");
 			if(!str){
 				return;
 			}
-			var cur = self._getEl(str);
+			var cur = self.tool._getEl(str);
 			self.current[arr[0]](cur);
 			if(typeof cur == "object"){
-				self._setcur(cur);
+				self.tool._setcur(cur);
 			}
 		}
 		if(arr[0]=="change"){
 			var html = self.current.html()
-			self.current.html("");
+				self.current.html("");
 			var temp = self.current[0].outerHTML.toString();
-			console.log(temp);
-			temp = temp.replace(eval("/"+self.current[0].tagName.toUpperCase()+"/ig"),arr[1]);
-
-			console.log(temp);
-			var cur = self._getEl(temp);
-			cur.html(html);
+				temp = temp.replace(eval("/"+self.current[0].tagName.toUpperCase()+"/ig"),arr[1]);
+			var cur = self.tool._getEl(temp);
+				cur.html(html);
 			self.current.after(cur);
 			self.current.remove();
-			self._setcur(cur);
+			self.tool._setcur(cur);
 		}
 		if(arr[0]=="html"){
 			self.current.html(value.replace("html ",""));
 			self.view.addMark(self.current);
 		}
 		if(arr[0]=="wrap"){
-			var cur = self._getEl(arr[1]);
+			var cur = self.tool._getEl(arr[1]);
 			D.wrap(self.current,cur);
 		}
 		if(arr[0]=="delete"){
 			var cur = self.current.parent();
 			self.current.remove();
-			self._setcur(cur);
+			self.tool._setcur(cur);
 		}
 		if(arr[0]=="clear"){
 			self.current.html("");
 			self.view.addMark(self.current);
 		}
+		if(arr[0]=="&&"){
+			self.current.removeAttr(arr[1]);
+		}
+		if(arr[0]==".."){
+			self.current.removeClass(arr[1]);
+		}
+		if(arr[0]=="find"){
+			self.current.removeClass(arr[1]);
+		}
 		if(arr[0]=="copy"){
-			self._copy = self.current.clone();
+			self._copy = self.current.clone(true);
 		}
 		if(arr[0]=="paste"){
 			self.current.append(self._copy);
@@ -306,21 +362,41 @@ KISSY.add('hcs',function (S) {
 		}
 		if(arr[0]=="undev"){
 			this.view.undev();
+			return;
 		}
 		if(arr[0]=="save"){
 			this.view.undev();
-			localStorage.hcs = $("body").html();
+			localStorage.hcs = $("html").html();
+			if(arr[1]){
+				var path = "";
+				if(self.config.path){
+					path = "&path="+self.config.path;
+				}
+				S.IO.post("down.php?title="+arr[1]+"&content="+localStorage.hcs+path);
+			}
 			this.view.dev();
 		}
+		if(arr[0]=="load"){
+			if(arr[1]){
+				var path = "";
+				if(self.config.path){
+					path = self.config.path;
+				}
+				var time = +new Date();
+				S.IO.post(path+arr[1]+".html?"+time,
+					function(html){
+						localStorage.hcs = html;
+						$("html").html(localStorage.hcs);
+						self.view.dev();
+					}
+				);
+			}
+			
+		}
 		if(arr[0].match(/^\d*$/)){
-			self._setcur(self.current[arr[0]]);
+			self.tool._setcur(self.current[arr[0]]);
 		}
 		self.view.dev();
 	};
-	HCS.prototype.tool = function(){
-		return {
-
-		}
-	}
 	return HCS;
-});
+},{requires:["hcs.css"]});
