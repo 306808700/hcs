@@ -1,26 +1,13 @@
-hcs  -  to quickly build HTML code
-=====
+## hcs
 
-快速构建html代码的命令行编辑器工具
+* 版本：1.0
+* 教程：[http://gallery.kissyui.com/hcs/1.0/guide/index.html](http://gallery.kissyui.com/hcs/1.0/guide/index.html)
+* demo：[http://gallery.kissyui.com/hcs/1.0/demo/index.html](http://gallery.kissyui.com/hcs/1.0/demo/index.html)
 
-更新日志
-=====
-* 现在保存的时候可以自定义保存目录；
+## changelog
+
+### V1.0
+
+    [!] 提供基础命令，及生成加载页面功能
 
 
-命令行
-======
-* cd 
-* load
-* save
-* append after before prepend
-* parent children next prev
-* html 
-* clear
-* delete
-* copy paste
-* &name=prd
-* div.nav
-* #wrap
-* style
-* dev undev

@@ -6,6 +6,7 @@
 KISSY.add('hcs',function (S) {
 	var $ = S.all;
 	var D = S.DOM;
+	var DOMNUM = 0;
 	function HCS(config){
 		this.config = config||{};
 		this.current = null;
@@ -18,8 +19,8 @@ KISSY.add('hcs',function (S) {
 	HCS.prototype.view = function(first_argument) {
 		var self = this;
 		this.tpl = {
-			wrap:"<hcs class='hcs_wrap'></hcs>",
-			place:"<hcs class='hcs_place'></hcs>",
+			wrap:"<hcsplate class='hcs_wrap'></hcsplate>",
+			place:"<hcsplate class='hcs_place'></hcsplate>",
 			input:"<input type='text' class='hcs_input' placeholder='BODY' />"
 		};
 
@@ -27,54 +28,78 @@ KISSY.add('hcs',function (S) {
 		this.$input = $(this.tpl.input);
 		this.$wrap.append(this.$input);
 		if(localStorage.hcs){
-			//document.getElementsByTagName("html")[0].innerHTML = localStorage.hcs;
+			document.getElementsByTagName("html")[0].innerHTML = localStorage.hcs;
 		}
-
-		$("body").after(this.$wrap).after($(this.tpl.place));
-
+		if($("hcsplate").length==0){
+			$("body").after(this.$wrap).after($(this.tpl.place));
+		}
+		var time = +new Date();
+		$("head").append('<link href="/hcs.css?t="'+time+' rel="stylesheet" charset="utf-8" style="display:none !important ">')
 		this.current = $("body");
 
 		this.view.current = function(){
 			$("html").all(".hcs_current")
 				.removeClass("hcs_current")
-				//.removeAttr("contenteditable");
+				.removeAttr("contenteditable");
 			self.current.addClass("hcs_current");
-			//self.current.attr('contenteditable',true);
+			self.current.attr('contenteditable',true);
 		};
 		this.view.uncurrent = function(){
 			$("html").all(".hcs_current")
 				.removeClass("hcs_current")
-				//.removeAttr("contenteditable");
+				.removeAttr("contenteditable");
 		};
 		this.view.addMark = function(dom){
 			var mark;
+			var content = "";
 			if($(dom).one('.hcs_dev_span')){
 				mark = $(dom).one('.hcs_dev_span');
 			}else{
-				mark = $("<hcs class='hcs_dev_span'></hcs>");
+				mark = $("<hcs class='hcs_dev_span' contenteditable='false'></hcs>");
 			}
 			var id = $(dom).attr("id");
 			var clas = $(dom).attr("class");
 			var tagName = $(dom)[0].tagName;
+
 			if(clas){
 				clas = clas.replace(/hcs_dev/,"").replace(/hcs_current/,"");
 			}
-			if(id) mark.html(id);
-			else if(clas) mark.html(tagName+"."+clas);
-			else mark.html(tagName);
-			$(dom).append(mark);
+			if(id) content = id;
+			else if(clas) content = (tagName+"."+clas);
+			else content = tagName;
+			//$(dom).append(mark);
+
+			function getOtherAtrs(value){
+				content+=("__"+value+"="+$(dom).attr(value));
+			}
+
+			if($(dom).attr("src")){
+				getOtherAtrs("src")
+			}
+			if($(dom).attr("href")){
+				getOtherAtrs("href")
+			}
+			if($(dom).attr("charset")){
+				getOtherAtrs("charset")
+			}
+			return "::before{content:'"+content+"';}";
 		}
 		this.view.dev = function(){
-			S.each($(document).all("*"),function(dom){
-				if($(dom).hasClass(".hcs_dev")||$(dom).hasClass(".hcs_dev_span")){
+			var temp ="";
+			S.each($(document).all("*"),function(dom,index){
+				if($(dom)[0].tagName=="HTML"||$(dom)[0].tagName=="SCRIPT"||$(dom)[0].tagName=="HCS"||$(dom)[0].tagName=="HCSPLATE"||$(dom).attr("class")=="hcs_input"){
 					return;
 				}
-				if($(dom)[0].tagName=="SCRIPT"||$(dom)[0].tagName=="HCS"||$(dom).attr("class")=="hcs_input"){
-					return;
-				}
-				self.view.addMark(dom);
+				$(dom).attr("hcs",DOMNUM);DOMNUM++;
+				var attr_hcs = $(dom).attr("hcs");
+				temp+="[hcs='"+attr_hcs+"']"+self.view.addMark(dom);
 				$(dom).addClass("hcs_dev");
 			});
+			if($("style.hcs_style").length==0){
+				$("head").append($("<style class='hcs_style'></style>"));
+			}
+			$style = $("style.hcs_style")
+			$style.html(temp);
 			self.view.current();
 
 		};
@@ -83,6 +108,28 @@ KISSY.add('hcs',function (S) {
 			$("html").all(".hcs_dev").removeClass("hcs_dev");
 			$("html").all(".hcs_dev_span").remove();
 			$("hcs").remove();
+			$(".hcs_style").remove();
+			$(".hcs_script").remove();
+			S.each($(document).all("*"),function(dom){
+				if($(dom).attr("class")==""){
+					$(dom).removeAttr("class");
+				}
+				$(dom).removeAttr("hcs");
+			});
+			return;
+		};
+		this.view.undevplate = function(){
+			$("hcsplate").remove();
+			S.each($("html").all("script"),function(dom){
+				if($(dom).attr('src')&&$(dom).attr('src').indexOf("hcs.js")!=-1){
+					$(dom).remove();
+				}
+			});
+			S.each($("html").all("link"),function(dom){
+				if($(dom).attr('href')&&$(dom).attr('href').indexOf("hcs.css")!=-1){
+					$(dom).remove();
+				}
+			});
 			return;
 		};
 		this.view.dev();
@@ -100,13 +147,16 @@ KISSY.add('hcs',function (S) {
 			
 		}).fire("focus");
 		$(document).on("click",function(e){
-			if($(e.target).hasClass("hcs_dev_span")){
-				self.tool._setcur($(e.target).parent());
-				self.$input.fire("focus");
+			if($(e.target).hasClass("hcs_dev")){
+				self.tool._setcur($(e.target));
+				self.current.fire("focus");
+				//self.$input.fire("focus");
+			}
+			if($(e.target).hasClass("hcs_current")){
 			}
 		});
 		$(document).on("keydown",function(e){
-			self.$input.fire("focus");
+		//	self.$input.fire("focus");
 		});
 		window.onbeforeunload=function(){
 			return "如果还未保存，请执行命令 save";
@@ -133,6 +183,33 @@ KISSY.add('hcs',function (S) {
 				$(this).val(value);
 				$(this).fire("focus");
 				self._i++;
+			}
+			if(e.keyCode == 9){
+				if($(this).val()==""){
+					self.current.fire('focus');
+				}
+				if($(this).val()=="ap"){
+					$(this).val("append ");
+				}
+				if($(this).val()=="af"){
+					$(this).val("after  ");
+				}
+				if($(this).val()=="pr"){
+					$(this).val("prev ");
+				}
+				if($(this).val()=="ne"){
+					$(this).val("next ");
+				}
+				if($(this).val()=="be"){
+					$(this).val("before ");
+				}
+				if($(this).val()=="chil"){
+					$(this).val("children ");
+				}
+				if($(this).val()=="par"){
+					$(this).val("parent ");
+				}
+				return false;
 			}
 		});
 
@@ -189,6 +266,9 @@ KISSY.add('hcs',function (S) {
 			if(typeof value=="object"){
 				self.current = $(value);
 			}else if(type == "relative"){
+				if($(D[value](self.current))[0].tagName=="HCS"){
+					return;
+				}
 				self.current = $(D[value](self.current));
 			}else{
 				self.current = $(value);
@@ -198,7 +278,9 @@ KISSY.add('hcs',function (S) {
 				var clas = self.current.attr("class");
 				var index = self.current.index();
 				var tagName = self.current[0].tagName;
-
+				if(clas){
+					clas = clas.replace(/hcs_dev/,"").replace(/hcs_current/,"");
+				}
 				if(id) self.$input.attr("placeholder",id);
 				else if(clas) self.$input.attr("placeholder",tagName+"."+clas);
 				else self.$input.attr("placeholder",tagName);
@@ -209,7 +291,7 @@ KISSY.add('hcs',function (S) {
 			// 解析字符串
 			var ids = value.match(/^#[a-zA-Z_]*/g);
 			var clas = value.match(/\.[a-zA-Z_]*/g);
-			var atrs = value.match(/&[a-zA-Z_\d]*=[a-zA-Z_\d#_-]*|&[a-zA-Z_\d]*/g);
+			var atrs = value.match(/&[a-zA-Z_\d]*=["'.a-zA-Z_\d#_-]*|&[a-zA-Z_\d]*/g);
 
 			if(ids&&ids.length>0){
 				self.current.attr("id",ids[0].replace("#",""));
@@ -222,7 +304,7 @@ KISSY.add('hcs',function (S) {
 			}
 			if(atrs&&atrs.length>0){
 				for(var i=0,len=atrs.length;i<len;i++){
-					var a = atrs[i].split("=")[0].replace("&","");
+					var a = atrs[i].split("=")[0].replace(/[&'"]/,"");
 					var b = atrs[i].split("=")[1]||"";
 					self.current.attr(a,b);
 				}
@@ -241,8 +323,13 @@ KISSY.add('hcs',function (S) {
 					return $(str);
 				}
 			}
+			if(str.indexOf('"')!=-1){
+				str = str.replace(/"/g,"");
+				return str;
+			}
+
 			var temp = "<";
-			var index = (str.indexOf(".")+1)||(str.indexOf("&")+1)||(str.indexOf("#")+1);
+			var index = (str.indexOf(".")+1)||(str.indexOf("&")+1)||(str.indexOf("#")+1)||str.match(/[a-z]*/)[0].length+1;
 
 			// 先把tagName取到
 			temp+=str.substring(0,index-1);
@@ -255,13 +342,19 @@ KISSY.add('hcs',function (S) {
 				temp+=str.split("#")[0]+" id = "+str.split("#")[1];
 			}
 			if(str.indexOf("&")!=-1){
-				var a = str.match(/[a-z\d]*=[a-z\d]*/g);
-				for(var i=0,l = a.length;i<l;i++){
-					var b = a[i].split("=");
-					temp+=" "+b[0]+"="+b[1]+" ";
+				var atrs = str.match(/&[a-zA-Z_\d]*=["'.a-zA-Z_\d#_-]*|&[a-zA-Z_\d]*/g);
+				for(var i=0,len=atrs.length;i<len;i++){
+					var a = atrs[i].split("=")[0].replace(/[&'"]/,"");
+					var b = atrs[i].split("=")[1]||"";
+					self.current.attr(a,b);
+					temp+=" "+a;
+					if(b){
+						temp+"="+b+" ";
+					}
 				}
 			}
 			temp+="/>";
+			console.log(temp);
 			if(str.indexOf("*")!=-1){
 				var repet = Number(str.match(/\*[\d]*/)[0].replace("*",""));
 				var newTemp = temp;
@@ -269,6 +362,7 @@ KISSY.add('hcs',function (S) {
 					temp+=newTemp;
 				}
 			}
+			console.log(temp);
 			try{
 				var a = $(temp);
 				return a;
@@ -277,7 +371,6 @@ KISSY.add('hcs',function (S) {
 			}
 		};
 	};
-	
 	HCS.prototype.render = function(value){
 		var self = this;
 		self.command = {
@@ -308,14 +401,33 @@ KISSY.add('hcs',function (S) {
 			if(!str){
 				return;
 			}
-			var cur = self.tool._getEl(str);
+			var cur;
+			if(str.indexOf(">")!=-1){
+				var step = str.split(">");
+				cur = self.tool._getEl(step[0]);
+				var i = step.length-1;  // 2 
+				function getDomList(d){
+					d = d||self.tool._getEl(step[i]);
+					i--;
+					if(i>0){
+						var dd = self.tool._getEl(step[i]);
+						dd.append(d);
+						getDomList(dd);
+					}else{
+						cur.append(d);
+					}
+				}
+				getDomList();
+			}else{
+				cur = self.tool._getEl(str);
+			}
 			self.current[arr[0]](cur);
 			if(typeof cur == "object"){
 				self.tool._setcur(cur);
 			}
 		}
 		if(arr[0]=="change"){
-			var html = self.current.html()
+			var html = self.current.html();
 				self.current.html("");
 			var temp = self.current[0].outerHTML.toString();
 				temp = temp.replace(eval("/"+self.current[0].tagName.toUpperCase()+"/ig"),arr[1]);
@@ -364,17 +476,37 @@ KISSY.add('hcs',function (S) {
 			this.view.undev();
 			return;
 		}
+		if(arr[0]=="css"){
+			var link = $("<link href='"+arr[1]+"'' rel='stylesheet' />");
+			$("head").append(link);
+			self.tool._setcur(link);
+		}
+		if(arr[0]=="js"){
+			var script = document.createElement("script");
+			script.setAttribute("type","text/javascript");
+			script.setAttribute("scr",arr[1]);
+			document.head.appendChild(script);
+			self.tool._setcur($(script));
+		}
+		if(arr[0]=="reset"){
+			delete localStorage.hcs;
+			window.onbeforeunload = null;
+			window.location.href = window.location.href;
+		}
 		if(arr[0]=="save"){
 			this.view.undev();
+			this.view.undevplate();
 			localStorage.hcs = $("html").html();
+			var content = encodeURIComponent("<!doctype html>\n<html>\n"+localStorage.hcs+"\n</html>");
 			if(arr[1]){
 				var path = "";
 				if(self.config.path){
 					path = "&path="+self.config.path;
 				}
-				S.IO.post("down.php?title="+arr[1]+"&content="+localStorage.hcs+path);
+				S.IO.post("down.php?title="+arr[1]+"&content="+content+path);
+
 			}
-			this.view.dev();
+			this.init();
 		}
 		if(arr[0]=="load"){
 			if(arr[1]){
@@ -385,13 +517,13 @@ KISSY.add('hcs',function (S) {
 				var time = +new Date();
 				S.IO.post(path+arr[1]+".html?"+time,
 					function(html){
+						html = html.replace("<!doctype html>\n<html>\n","").replace("\n</html>","");
 						localStorage.hcs = html;
 						$("html").html(localStorage.hcs);
-						self.view.dev();
+						self.init();
 					}
 				);
 			}
-			
 		}
 		if(arr[0].match(/^\d*$/)){
 			self.tool._setcur(self.current[arr[0]]);
@@ -399,4 +531,4 @@ KISSY.add('hcs',function (S) {
 		self.view.dev();
 	};
 	return HCS;
-},{requires:["hcs.css"]});
+});

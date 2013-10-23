@@ -2,16 +2,16 @@
 <html>
 <head>
     <meta charset="utf-8"/>
-    <title>简单的html编码 - hcs</title>
-    <script src="http://g.tbcdn.cn/kissy/k/1.3.0/kissy-min.js" charset="utf-8"></script>
-    <script type="text/javascript">
+    <title>命令行编码器 - hcs</title>
+    <script src="http://g.tbcdn.cn/kissy/k/1.3.0/kissy-min.js" charset="utf-8" class="hcs_script"></script>
+    <script type="text/javascript" class="hcs_script">
 		var S = KISSY;
 		S.Config.debug = true;
 		S.config({
 			packages:[
 			    {
 			        name:"hcs",
-			        path:"http://127.0.0.1/hcs",
+			        path:"/",
 			        charset:"utf-8"
 			    }
 			]
@@ -26,6 +26,5 @@
 		</script>
 </head>
 <body>
-	
 </body>
 </html>

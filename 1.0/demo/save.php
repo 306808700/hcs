@@ -9,11 +9,11 @@
 		fclose($fp);
 	*/
     $title = $_REQUEST["title"];
-	$content = $_REQUEST["content"];
+	$content = $_REQUEST["content"];   
 	$path = $_REQUEST["path"];
 	$name = $title.".html";
 
-
+	//$content = str_replace("    ","\n",$content);
 	///创建文件夹 
 	function createdir($dir){
 		if(file_exists($dir) && is_dir($dir)){
@@ -24,13 +24,15 @@
 	///创建文件
 	function creat_file($PATH,$name,$content){
 		$sFile = $name;
+		/*
 		if (file_exists($PATH.$sFile)) {
 			creat_file();
 		}else {
+		*/
 			$fp= fopen($PATH.$sFile,"w");
 			fwrite($fp,$content);
 			fclose($fp);
-		} 
+		//} 
 		return $sFile;
 	}
 	createdir($path);

@@ -5,22 +5,35 @@
 	background: #333;
 	border:1px solid #333;
 	box-shadow: 0px -1px 3px #333;
-	height: 30px;
+	height: 35px;
 	width: 100%;
 
 }
-
+.hcs_dev::before {
+	color: #000;
+	background-color:orange;
+	position: absolute;
+	top: -1px;
+	left: -1px;
+	font-size: 12px;
+}
 .hcs_input{
 	width: 300px;
-	height: 20px;
-	line-height: 20px;
+	height: 25px;
+	line-height: 25px;
 	font-size: 16px;
 	border:0px;
-	margin: 5px 0px 0px 5px;
+	margin: 5px 0px 0px 8px;
 	padding: 1px;
+	padding-left: 5px;
 	float: left;
+	background: #ccc;
 }
-
+.hcs_input:focus{
+	background: #fff;
+}
+.hcs_input::-webkit-input-placeholder { color:#000; }
+.hcs_input:focus::-webkit-input-placeholder { color:#ccc; }
 .hcs_dev_span{
 	font-size: 12px;
 	font-weight: normal;
@@ -40,6 +53,7 @@
 	list-style: none !important;
 	display: block!important;
 }
+
 span.hcs_dev,
 a.hcs_dev{
 	display: block;
@@ -47,6 +61,9 @@ a.hcs_dev{
 
 body.hcs_dev{
 	margin-bottom: 50px;
+}
+.hcs_style{
+	display: none !important;
 }
 .hcs_current{
 
