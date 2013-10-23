@@ -111,7 +111,7 @@ KISSY.add("gallery/hcs/1.0/index",function (S) {
             $("hcs").remove();
             $(".hcs_style").remove();
             $(".hcs_script").remove();
-            $(".hcs_link").remove();
+            
             S.each($(document).all("*"),function(dom){
                 if($(dom).attr("class")==""){
                     $(dom).removeAttr("class");
@@ -491,6 +491,7 @@ KISSY.add("gallery/hcs/1.0/index",function (S) {
         if(arr[0]=="save"){
             this.view.undev();
             this.view.undevplate();
+            $(".hcs_link").remove();
             localStorage.hcs = $("html").html();
             var content = encodeURIComponent("<!doctype html>\n<html>\n"+localStorage.hcs+"\n</html>");
             if(arr[1]){
