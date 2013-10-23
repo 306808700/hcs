@@ -35,7 +35,7 @@ KISSY.add("gallery/hcs/1.0/index",function (S) {
             $("body").after(this.$wrap).after($(this.tpl.place));
         }
         var time = +new Date();
-        $("head").append('<link href="../index.css?t='+time+'" rel="stylesheet" charset="utf-8" style="display:none !important " class="hcs_style">')
+        $("head").append('<link href="../index.css?t='+time+'" rel="stylesheet" charset="utf-8" style="display:none !important " class="hcs_link">')
         this.current = $("body");
 
         this.view.current = function(){
@@ -111,12 +111,22 @@ KISSY.add("gallery/hcs/1.0/index",function (S) {
             $("hcs").remove();
             $(".hcs_style").remove();
             $(".hcs_script").remove();
+            
             S.each($(document).all("*"),function(dom){
                 if($(dom).attr("class")==""){
                     $(dom).removeAttr("class");
                 }
                 $(dom).removeAttr("hcs");
+                if($(dom)[0].tagName=="STYLE"){
+                    if(!$(dom).hasClass("hcs_style")){
+                       
+                        var html = $(dom).html().replace(/<div>/g,"\n").replace(/<\/div>/g,"")
+                        $(dom).html($(dom).html().replace(/<div>/g,"\n").replace(/<\/div>/g,""));
+                    }
+                }
             });
+
+            //$("style").html($("style").text());
             return;
         };
         this.view.undevplate = function(){
@@ -255,7 +265,7 @@ KISSY.add("gallery/hcs/1.0/index",function (S) {
             // 解析字符串
             var ids = value.match(/^#[a-zA-Z_]*/g);
             var clas = value.match(/\.[a-zA-Z_+-\s]*/g);
-            var atrs = value.match(/&[a-zA-Z_\d]*=["'.a-zA-Z_\d#_-]*|&[a-zA-Z_\d]*/g);
+            var atrs = value.match(/&[a-zA-Z_\d]*=["'.a-zA-Z_\d#\_-]*|&[a-zA-Z_\d]*/g);
 
             if(ids&&ids.length>0){
                 self.current.attr("id",ids[0].replace("#",""));
@@ -406,6 +416,7 @@ KISSY.add("gallery/hcs/1.0/index",function (S) {
                 cur = self.tool._getEl(str);
             }
             self.current[arr[0]](cur);
+            self.current[arr[0]]("\n");
             if(typeof cur == "object"){
                 self.tool._setcur(cur);
             }
@@ -461,7 +472,7 @@ KISSY.add("gallery/hcs/1.0/index",function (S) {
             return;
         }
         if(arr[0]=="css"){
-            var link = $("<link href='"+arr[1]+"'' rel='stylesheet' />");
+            var link = $("<link href='"+arr[1]+"' rel='stylesheet' />");
             $("head").append(link);
             self.tool._setcur(link);
         }
@@ -480,6 +491,7 @@ KISSY.add("gallery/hcs/1.0/index",function (S) {
         if(arr[0]=="save"){
             this.view.undev();
             this.view.undevplate();
+            $(".hcs_link").remove();
             localStorage.hcs = $("html").html();
             var content = encodeURIComponent("<!doctype html>\n<html>\n"+localStorage.hcs+"\n</html>");
             if(arr[1]){
