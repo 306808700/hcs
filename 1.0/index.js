@@ -29,21 +29,13 @@ KISSY.add("gallery/hcs/1.0/index",function (S) {
         this.$wrap.append(this.$input);
         if(localStorage.hcs){
             document.getElementsByTagName("html")[0].innerHTML = localStorage.hcs;
-            console.log(123);
-            KISSY.use("gallery/hcs/1.0/index.css",function(){
-                console.log(1234);
-                S.each($("head").all("link"),function(dom){
-                    if($(dom).attr("href").indexOf("hcs")!=-1){
-                        $(dom).attr('style',"display:none !important");
-                    }
-                })
-            });
+
         }
         if($("hcsplate").length==0){
             $("body").after(this.$wrap).after($(this.tpl.place));
         }
         var time = +new Date();
-        //$("head").append('<link href="/hcs.css?t="'+time+' rel="stylesheet" charset="utf-8" style="display:none !important ">')
+        $("head").append('<link href="../index.css?t='+time+'" rel="stylesheet" charset="utf-8" style="display:none !important " class="hcs_style">')
         this.current = $("body");
 
         this.view.current = function(){
@@ -130,12 +122,12 @@ KISSY.add("gallery/hcs/1.0/index",function (S) {
         this.view.undevplate = function(){
             $("hcsplate").remove();
             S.each($("html").all("script"),function(dom){
-                if($(dom).attr('src')&&$(dom).attr('src').indexOf("hcs.js")!=-1){
+                if($(dom).attr('src')&&$(dom).attr('src').indexOf("hcs")!=-1){
                     $(dom).remove();
                 }
             });
             S.each($("html").all("link"),function(dom){
-                if($(dom).attr('href')&&$(dom).attr('href').indexOf("hcs.css")!=-1){
+                if($(dom).attr('href')&&$(dom).attr('href').indexOf("hcs")!=-1){
                     $(dom).remove();
                 }
             });
@@ -163,14 +155,14 @@ KISSY.add("gallery/hcs/1.0/index",function (S) {
             if($(e.target).hasClass("hcs_current")){
             }
         });
-        $(document).on("keydown",function(e){
+        $(document).on("keysave",function(e){
         //  self.$input.fire("focus");
         });
         window.onbeforeunload=function(){
             return "如果还未保存，请执行命令 save";
         }
         self._command_history = [];
-        this.$input.on("keydown",function(e){
+        this.$input.on("keysave",function(e){
             if(e.keyCode == 38){
                 // up;
                 if(self._command_history[self._i-1]){
@@ -183,7 +175,7 @@ KISSY.add("gallery/hcs/1.0/index",function (S) {
                 }
             }
             if(e.keyCode == 40){
-                // down;
+                // save;
                 if($(this).val()==""){
                     return;
                 }
@@ -476,7 +468,7 @@ KISSY.add("gallery/hcs/1.0/index",function (S) {
                 if(self.config.path){
                     path = "&path="+self.config.path;
                 }
-                S.IO.post("down.php?title="+arr[1]+"&content="+content+path);
+                S.IO.post("save.php?title="+arr[1]+"&content="+content+path);
 
             }
             this.init();

@@ -17,7 +17,7 @@ hcs是一款概念式的以命令行方式，快速构建html页面的在线编�
 
 ## API说明
 * path 设置html目录名
-
+*
 
 ## 命令行
 
@@ -29,12 +29,12 @@ hcs是一款概念式的以命令行方式，快速构建html页面的在线编�
 * html 填充内容
 * clear 清空当前节点内容
 * delete 删除当前节点
+* reset 重置工程到最初状态
 * copy paste 复制粘帖当前节点
 * dev undev 默认开发者模式，取消开发者模式
 * css 导入css文件, 例如 css css/index.css
 * js 导入js文件，例如 js  js/index.js
 * tab "命令框"和"节点"间焦点切换
-* 
 
 
 ## 符号命令行 (对象是当前节点)
