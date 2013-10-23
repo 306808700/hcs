@@ -109,7 +109,7 @@ KISSY.add("gallery/hcs/1.0/index",function (S) {
             $("html").all(".hcs_dev").removeClass("hcs_dev");
             $("html").all(".hcs_dev_span").remove();
             $("hcs").remove();
-            $(".hcs_style").remove();
+            //$(".hcs_style").remove();
             $(".hcs_script").remove();
             S.each($(document).all("*"),function(dom){
                 if($(dom).attr("class")==""){
