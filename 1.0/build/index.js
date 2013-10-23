@@ -1,4 +1,10 @@
 /*
+combined files : 
+
+gallery/hcs/1.0/index
+
+*/
+/*
     html simple coding
     @auth changyuan.lcy
 */
