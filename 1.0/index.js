@@ -95,6 +95,11 @@ KISSY.add("gallery/hcs/1.0/index",function (S) {
                 var attr_hcs = $(dom).attr("hcs");
                 temp+="[hcs='"+attr_hcs+"']"+self.view.addMark(dom);
                 $(dom).addClass("hcs_dev");
+                if($(dom)[0].tagName=="LINK"&&!$(dom).hasClass("hcs_link")){
+                    S.IO.get($(dom).attr("href"),function(str){
+                        $(dom).html(str);
+                    });
+                }
             });
             if($("style.hcs_style").length==0){
                 $("head").append($("<style class='hcs_style'></style>"));
@@ -263,9 +268,29 @@ KISSY.add("gallery/hcs/1.0/index",function (S) {
         };
         self.tool._setAttr = function(value){
             // 解析字符串
+            
             var ids = value.match(/^#[a-zA-Z_]*/g);
             var clas = value.match(/\.[a-zA-Z_+-\s]*/g);
-            var atrs = value.match(/&[a-zA-Z_\d]*=["'.a-zA-Z_\d#\_-]*|&[a-zA-Z_\d]*/g);
+            var atrs = value.match(/&[a-zA-Z_\d]*=["'.a-zA-Z_\d#\_\-\:\/]*|[a-zA-Z_\d]*/);
+            function setAtrs(){
+                if(atrs&&atrs.length>0){
+                    if(atrs[0].indexOf("-")!=-1){
+                        var _nc = atrs[0].replace('.-',"");
+                        self.current.removeAttr(_nc);
+                    }
+                    else {
+                        for(var i=0,len=atrs.length;i<len;i++){
+                            var a = atrs[i].split("=")[0].replace(/[&'"]/g,"");
+                            var b = atrs[i].split("=")[1].replace(/[&'"]/g,"")||"";
+                            self.current.attr(a,b);
+                        }
+                    }
+                }
+            }
+            if(value.indexOf("&")==0){
+                setAtrs();
+                return;
+            }
 
             if(ids&&ids.length>0){
                 self.current.attr("id",ids[0].replace("#",""));
@@ -299,12 +324,13 @@ KISSY.add("gallery/hcs/1.0/index",function (S) {
                 }
                 else {
                     for(var i=0,len=atrs.length;i<len;i++){
-                        var a = atrs[i].split("=")[0].replace(/[&'"]/,"");
-                        var b = atrs[i].split("=")[1]||"";
+                        var a = atrs[i].split("=")[0].replace(/[&'"]/g,"");
+                        var b = atrs[i].split("=")[1].replace(/[&'"]/g,"")||"";
                         self.current.attr(a,b);
                     }
                 }
             }
+            setAtrs();
         };
         self.tool._getEl = function(str){
             if(str.indexOf("--")!=-1){
@@ -364,6 +390,12 @@ KISSY.add("gallery/hcs/1.0/index",function (S) {
                 return str;
             }
         };
+        self.tool._formartCss = function(str){
+            var attr = str.match(/[.#a-zA-Z\d._,:-]+/g);
+            // .abc{color:range,font-size:20px} 
+            // {name:".abc",attrs:{color:"orange",font-size:"20px"}};
+
+        }
     };
     HCS.prototype.render = function(value){
         var self = this;
@@ -474,6 +506,9 @@ KISSY.add("gallery/hcs/1.0/index",function (S) {
         if(arr[0]=="css"){
             var link = $("<link href='"+arr[1]+"' rel='stylesheet' />");
             $("head").append(link);
+            S.IO.get(arr[1],function(str){
+                console.log(str);
+            });
             self.tool._setcur(link);
         }
         if(arr[0]=="js"){
