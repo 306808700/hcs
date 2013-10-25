@@ -37,6 +37,7 @@ KISSY.add("gallery/hcs/1.0/index",function (S) {
         var time = +new Date();
         $("head").append('<link href="../index.css?t='+time+'" rel="stylesheet" charset="utf-8" style="display:none !important " class="hcs_link">')
         this.current = $("body");
+        console.log("index");
 
         this.view.current = function(){
             $("html").all(".hcs_current")
@@ -86,6 +87,7 @@ KISSY.add("gallery/hcs/1.0/index",function (S) {
             return "::before{content:'"+content+"';}";
         }
         this.view.dev = function(){
+
             var temp ="";
             S.each($(document).all("*"),function(dom,index){
                 if($(dom)[0].tagName=="HTML"||$(dom)[0].tagName=="SCRIPT"||$(dom)[0].tagName=="HCS"||$(dom)[0].tagName=="HCSPLATE"||$(dom).attr("class")=="hcs_input"){
@@ -95,7 +97,7 @@ KISSY.add("gallery/hcs/1.0/index",function (S) {
                 var attr_hcs = $(dom).attr("hcs");
                 temp+="[hcs='"+attr_hcs+"']"+self.view.addMark(dom);
                 $(dom).addClass("hcs_dev");
-                if($(dom)[0].tagName=="LINK"&&!$(dom).hasClass("hcs_link")){
+                if($(dom)[0].tagName=="LINK"&&!$(dom).hasClass("hcs_style")){
                     S.IO.get($(dom).attr("href"),function(str){
                         $(dom).html(str);
                     });
@@ -390,12 +392,15 @@ KISSY.add("gallery/hcs/1.0/index",function (S) {
                 return str;
             }
         };
+        self.tool._saveCss = function(){
+            
+        };
         self.tool._formartCss = function(str){
             var attr = str.match(/[.#a-zA-Z\d._,:-]+/g);
             // .abc{color:range,font-size:20px} 
             // {name:".abc",attrs:{color:"orange",font-size:"20px"}};
 
-        }
+        };
     };
     HCS.prototype.render = function(value){
         var self = this;
@@ -414,7 +419,13 @@ KISSY.add("gallery/hcs/1.0/index",function (S) {
 
         if(arr[0]=="cd"){
             // 通过已知对象特征得到指定对象
-            self.tool._setcur(arr[1]);
+            var cur;
+            if(arr[1].indexOf(":")!=-1){
+                cur = $(arr[1].split(":")[0])[arr[1].split(":")[1]];
+            }else{
+                cur = arr[1];
+            }
+            self.tool._setcur(cur);
         }
         
         if("#.&".indexOf(value.charAt(0))!=-1){
@@ -458,7 +469,8 @@ KISSY.add("gallery/hcs/1.0/index",function (S) {
                 self.current.html("");
             var temp = self.current[0].outerHTML.toString();
                 temp = temp.replace(eval("/"+self.current[0].tagName.toUpperCase()+"/ig"),arr[1]);
-            var cur = self.tool._getEl(temp);
+            var cur = $(self.tool._getEl(temp));
+            console.log(cur);
                 cur.html(html);
             self.current.after(cur);
             self.current.remove();
@@ -504,6 +516,7 @@ KISSY.add("gallery/hcs/1.0/index",function (S) {
             return;
         }
         if(arr[0]=="css"){
+            console.log("css")
             var link = $("<link href='"+arr[1]+"' rel='stylesheet' />");
             $("head").append(link);
             S.IO.get(arr[1],function(str){
@@ -514,7 +527,12 @@ KISSY.add("gallery/hcs/1.0/index",function (S) {
         if(arr[0]=="js"){
             var script = document.createElement("script");
             script.setAttribute("type","text/javascript");
-            script.setAttribute("scr",arr[1]);
+            script.setAttribute("src",arr[1]);
+            S.each($("script"),function(dom){
+                if($(dom).attr("src")==arr[1]){
+                    $(dom).remove();
+                }
+            });
             document.head.appendChild(script);
             self.tool._setcur($(script));
         }
@@ -524,6 +542,7 @@ KISSY.add("gallery/hcs/1.0/index",function (S) {
             window.location.href = window.location.href;
         }
         if(arr[0]=="save"){
+            this.tool._saveCss();
             this.view.undev();
             this.view.undevplate();
             $(".hcs_link").remove();
