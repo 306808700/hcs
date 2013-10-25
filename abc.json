@@ -1,7 +1,7 @@
 {
     "name": "hcs",
     "version": "1.0",
-    "desc": "",
+    "desc": "是一款概念式的以命令行方式，快速构建html页面的在线编辑工具",
     "cover": "",
     "tag":"hcs",
     "author": {
