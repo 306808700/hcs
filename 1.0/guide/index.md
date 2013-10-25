@@ -3,8 +3,9 @@
 hcs是一款概念式的以命令行方式，快速构建html页面的在线编辑工具 2013-10-21 至今
 
 * 版本：1.0
-* 作者：changyuan.lcy
+* 作者：changyuan.lcy (核心)
 * demo：[http://gallery.kissyui.com/hcs/1.0/demo/index.html](http://gallery.kissyui.com/hcs/1.0/demo/index.html)
+* 请在chrome浏览器下使用。
 
 ## 初始化组件
 
@@ -19,6 +20,7 @@ hcs是一款概念式的以命令行方式，快速构建html页面的在线编�
 * path 设置html目录名
 * hcs所引入页面自动成为新建工程文件。
 * gallery 由于权限问题，save命令，新建目录和文件不能正常运行，下载到本地即可正常使用。
+* 请在本地localhost 环境中使用, save load 命令需要在 php 环境中。
 
 ## 命令行
 
