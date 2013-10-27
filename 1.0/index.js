@@ -6,12 +6,38 @@ KISSY.add("gallery/hcs/1.0/index",function (S) {
     var $ = S.all;
     var D = S.DOM;
     var DOMNUM = 0;
+    var __HISTORY = {length:0};
+    var __HISTORY_key;
+    function date(date, f){
+        if(typeof date != "object"){
+            f = date;
+            date = new Date();
+        }
+        f = f || "yyyy-MM-dd hh:mm:ss";
+        var o = {
+            "M+": date.getMonth() + 1,
+            "d+": date.getDate(),
+            "h+": date.getHours(),
+            "m+": date.getMinutes(),
+            "s+": date.getSeconds(),
+            "q+": Math.floor((date.getMonth() + 3) / 3),
+            "S": date.getMilliseconds()
+        };
+        if (/(y+)/.test(f))
+            f = f.replace(RegExp.$1, (date.getFullYear() + "").substr(4 - RegExp.$1.length));
+        for (var k in o)
+            if (new RegExp("(" + k + ")").test(f))
+                f = f.replace(RegExp.$1, RegExp.$1.length == 1 ? o[k] : ("00" + o[k]).substr(("" + o[k]).length));
+        return f;
+    }
+
     function HCS(config){
         this.config = config||{};
         this.current = null;
         this.init();
     };
     HCS.prototype.init = function(first_argument) {
+
         this.view();
         this.event();
         this.tool();
@@ -21,24 +47,28 @@ KISSY.add("gallery/hcs/1.0/index",function (S) {
         this.tpl = {
             wrap:"<hcsplate class='hcs_wrap'></hcsplate>",
             place:"<hcsplate class='hcs_place'></hcsplate>",
-            input:"<input type='text' class='hcs_input' placeholder='BODY' />"
+            input:"<input type='text' class='hcs_input' placeholder='BODY' />",
+            tip:"<hcsplate class='hcs_tip'></hcsplate>",
+            history:"<select class='hcs_history_select' title='历史记录'></select>"
         };
 
         this.$wrap = $(this.tpl.wrap);
         this.$input = $(this.tpl.input);
-        this.$wrap.append(this.$input);
+        this.$tip = $(this.tpl.tip);
+        this.$history = $(this.tpl.history);
+
+        this.$wrap.append(this.$input).append(this.$history);
         if(localStorage.hcs){
             document.getElementsByTagName("html")[0].innerHTML = localStorage.hcs;
-
+            this.$tip.html(localStorage.hcs_path);
         }
         if($("hcsplate").length==0){
-            $("body").after(this.$wrap).after($(this.tpl.place));
+            $("body").after(this.$wrap).after($(this.tpl.place)).after(this.$tip);
         }
         var time = +new Date();
         $("head").append('<link href="../index.css?t='+time+'" rel="stylesheet" charset="utf-8" style="display:none !important " class="hcs_link">')
+        
         this.current = $("body");
-        console.log("index");
-
         this.view.current = function(){
             $("html").all(".hcs_current")
                 .removeClass("hcs_current")
@@ -46,8 +76,8 @@ KISSY.add("gallery/hcs/1.0/index",function (S) {
             self.current.addClass("hcs_current");
             self.current.attr('contenteditable',true);
         };
-        this.view.uncurrent = function(){
-            $("html").all(".hcs_current")
+        this.view.uncurrent = function(dom){
+            dom.all(".hcs_current")
                 .removeClass("hcs_current")
                 .removeAttr("contenteditable");
         };
@@ -90,7 +120,7 @@ KISSY.add("gallery/hcs/1.0/index",function (S) {
 
             var temp ="";
             S.each($(document).all("*"),function(dom,index){
-                if($(dom)[0].tagName=="HTML"||$(dom)[0].tagName=="SCRIPT"||$(dom)[0].tagName=="HCS"||$(dom)[0].tagName=="HCSPLATE"||$(dom).attr("class")=="hcs_input"){
+                if($(dom)[0].tagName=="HTML"||$(dom)[0].tagName=="SCRIPT"||$(dom)[0].tagName=="HCS"||$(dom)[0].tagName=="HCSPLATE"||$(dom).attr("class")=="hcs_input"||$(dom).attr("class")=="hcs_history_select"){
                     return;
                 }
                 $(dom).attr("hcs",DOMNUM);DOMNUM++;
@@ -111,15 +141,15 @@ KISSY.add("gallery/hcs/1.0/index",function (S) {
             self.view.current();
 
         };
-        this.view.undev = function(){
-            self.view.uncurrent();
-            $("html").all(".hcs_dev").removeClass("hcs_dev");
-            $("html").all(".hcs_dev_span").remove();
-            $("hcs").remove();
-            $(".hcs_style").remove();
-            $(".hcs_script").remove();
+        this.view.undev = function(dom){
+            self.view.uncurrent(dom);
+            dom.all(".hcs_dev").removeClass("hcs_dev");
+            dom.all(".hcs_dev_span").remove();
+            dom.all("hcs").remove();
+            dom.all(".hcs_style").remove();
+            dom.all(".hcs_script").remove();
             
-            S.each($(document).all("*"),function(dom){
+            S.each(dom.all("*"),function(dom){
                 if($(dom).attr("class")==""){
                     $(dom).removeAttr("class");
                 }
@@ -136,14 +166,14 @@ KISSY.add("gallery/hcs/1.0/index",function (S) {
             //$("style").html($("style").text());
             return;
         };
-        this.view.undevplate = function(){
-            $("hcsplate").remove();
-            S.each($("html").all("script"),function(dom){
+        this.view.undevplate = function(dom){
+            dom.all("hcsplate").remove();
+            S.each(dom.all("script"),function(dom){
                 if($(dom).attr('src')&&$(dom).attr('src').indexOf("hcs")!=-1){
                     $(dom).remove();
                 }
             });
-            S.each($("html").all("link"),function(dom){
+            S.each(dom.all("link"),function(dom){
                 if($(dom).attr('href')&&$(dom).attr('href').indexOf("hcs")!=-1){
                     $(dom).remove();
                 }
@@ -213,7 +243,13 @@ KISSY.add("gallery/hcs/1.0/index",function (S) {
                 return false;
             }
         }).fire("focus");
-
+        
+        self.$history.on("change",function(){
+            var val = $(this).val();
+            localStorage.hcs = __HISTORY[val];
+            __HISTORY_key = val;
+            self.init();
+        });
 
         $(document).on("click",function(e){
             if($(e.target).hasClass("hcs_dev")){
@@ -273,7 +309,7 @@ KISSY.add("gallery/hcs/1.0/index",function (S) {
             
             var ids = value.match(/^#[a-zA-Z_]*/g);
             var clas = value.match(/\.[a-zA-Z_+-\s]*/g);
-            var atrs = value.match(/&[a-zA-Z_\d]*=["'.a-zA-Z_\d#\_\-\:\/]*|[a-zA-Z_\d]*/);
+            var atrs = value.match(/&[a-zA-Z_\d]*=["'.a-zA-Z_\d#\_\-\:\/u4e00-u9fa5]*|&[a-zA-Z_\d]*/);
             function setAtrs(){
                 if(atrs&&atrs.length>0){
                     if(atrs[0].indexOf("-")!=-1){
@@ -316,9 +352,10 @@ KISSY.add("gallery/hcs/1.0/index",function (S) {
                     for(var i=0;i<clas.length;i++){
                         self.current.removeAttr("class");
                         self.current.addClass(clas[i].replace(".",""));
+                        self.current.addClass("hcs_dev").addClass("hcs_current");
                     }
                 }
-            }
+            }          
             if(atrs&&atrs.length>0){
                 if(atrs[0].indexOf("-")!=-1){
                     var _nc = atrs[0].replace('.-',"");
@@ -359,7 +396,7 @@ KISSY.add("gallery/hcs/1.0/index",function (S) {
             temp+=str.substring(0,index-1);
 
             if(str.indexOf(".")!=-1){
-                temp+=" class = "+str.match(/\.[a-z]*/g).join("").replace(/\./g,"");
+                temp+=" class = "+str.match(/\.[a-zA-Z_+-\s]*/g).join("").replace(/\./g,"");
             }
             if(str.indexOf("#")!=-1){
 
@@ -401,6 +438,77 @@ KISSY.add("gallery/hcs/1.0/index",function (S) {
             // {name:".abc",attrs:{color:"orange",font-size:"20px"}};
 
         };
+
+        self.tool._addHistory = function(){
+
+            function add(){
+                var time = date(new Date(),"hh:mm:ss");
+                __HISTORY[time] = self.tool._saveHtml();
+                __HISTORY["length"] = __HISTORY["length"]+1;
+                self.$history.append("<option>"+time+"</option>");
+            }
+            if(__HISTORY.length==0){
+                add();
+            }
+
+            setInterval(function(){
+                var has = false;
+                for(var n in __HISTORY){
+                    if(n!="length"){
+                        if(__HISTORY[n]==self.tool._saveHtml()){
+                            has = true;
+                        }
+                    }
+                }
+                if(!has){
+                    add();
+                }
+            },10000);
+
+            self.$history.html("");
+            for(var name in __HISTORY){
+                if(name!="length"){
+                    self.$history.append("<option>"+name+"</option>");
+                }
+            }
+
+            if(__HISTORY_key){
+                self.$history.val(__HISTORY_key);
+            }
+            /*
+            if(value){
+                var time = date(new Date(),"hh:mm:ss");
+                __HISTORY[time] = self.tool._saveHtml();
+                
+            }
+            var hNum = 0;
+            self.$history.html("");
+            for(var name in __HISTORY){
+                self.$history.append("<option>"+name+"</option>");
+                hNum++;
+            }
+            
+            if(__HISTORY_key){
+                self.$history.val(__HISTORY_key);
+            }
+
+            console.log(hNum);
+            if(hNum>0){
+                self.$history.show();
+            }
+            */
+        };
+
+        self.tool._saveHtml = function(){
+            var $html = $("html").clone(true);
+            self.view.undev($html);
+            self.view.undevplate($html);
+            $html.all(".hcs_link").remove();
+            return $html.html();
+        }
+
+
+        self.tool._addHistory();
     };
     HCS.prototype.render = function(value){
         var self = this;
@@ -459,10 +567,11 @@ KISSY.add("gallery/hcs/1.0/index",function (S) {
                 cur = self.tool._getEl(str);
             }
             self.current[arr[0]](cur);
-            self.current[arr[0]]("\n");
+            /*
             if(typeof cur == "object"){
                 self.tool._setcur(cur);
             }
+            */
         }
         if(arr[0]=="change"){
             var html = self.current.html();
@@ -512,7 +621,7 @@ KISSY.add("gallery/hcs/1.0/index",function (S) {
             this.view.dev();
         }
         if(arr[0]=="undev"){
-            this.view.undev();
+            this.view.undev($("html"));
             return;
         }
         if(arr[0]=="css"){
@@ -543,36 +652,29 @@ KISSY.add("gallery/hcs/1.0/index",function (S) {
         }
         if(arr[0]=="save"){
             this.tool._saveCss();
-            this.view.undev();
-            this.view.undevplate();
-            $(".hcs_link").remove();
-            localStorage.hcs = $("html").html();
-            var content = encodeURIComponent("<!doctype html>\n<html>\n"+localStorage.hcs+"\n</html>");
+            localStorage.hcs = this.tool._saveHtml();
             if(arr[1]){
-                var path = "";
-                if(self.config.path){
-                    path = "&path="+self.config.path;
-                }
-                S.IO.post("save.php?title="+arr[1]+"&content="+content+path);
-
+                localStorage.hcs_path = arr[1];
             }
+            var content = encodeURIComponent("<!doctype html>\n<html>\n"+localStorage.hcs+"\n</html>");
+            S.IO.post("save.php?title="+localStorage.hcs_path+"&content="+content);
+            this.$tip.html(localStorage.hcs_path);
+            return;
             this.init();
         }
         if(arr[0]=="load"){
             if(arr[1]){
-                var path = "";
-                if(self.config.path){
-                    path = self.config.path;
-                }
                 var time = +new Date();
-                S.IO.post(path+arr[1]+".html?"+time,
+                S.IO.post(arr[1]+"?"+time,
                     function(html){
                         html = html.replace("<!doctype html>\n<html>\n","").replace("\n</html>","");
                         localStorage.hcs = html;
                         $("html").html(localStorage.hcs);
+                        self.$tip.html(localStorage.hcs_path);
                         self.init();
                     }
                 );
+                localStorage.hcs_path = arr[1];
             }
         }
         if(arr[0].match(/^\d*$/)){

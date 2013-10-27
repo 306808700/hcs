@@ -11,7 +11,7 @@
     $title = $_REQUEST["title"];
 	$content = $_REQUEST["content"];   
 	$path = $_REQUEST["path"];
-	$name = $title.".html";
+	$name = $title;
 
 	//$content = str_replace("    ","\n",$content);
 	///创建文件夹 
