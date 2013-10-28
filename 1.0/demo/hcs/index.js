@@ -2,7 +2,8 @@
     html simple coding
     @auth changyuan.lcy
 */
-KISSY.add("gallery/hcs/1.0/index",function (S) {
+KISSY.ready(function(S){
+    console.log(S);
     var $ = S.all;
     var D = S.DOM;
     var DOMNUM = 0;
@@ -46,7 +47,7 @@ KISSY.add("gallery/hcs/1.0/index",function (S) {
             $("body").after(this.$wrap).after($(this.tpl.place)).after(this.$tip);
         }
         var time = +new Date();
-        $("head").append('<link href="../index.css?t='+time+'" rel="stylesheet" charset="utf-8" style="display:none !important " class="hcs_link">')
+        $("head").append('<link href="index.css?t='+time+'" rel="stylesheet" charset="utf-8" style="display:none !important " class="hcs_link">')
         
         this.current = $("body");
         this.view.current = function(){
@@ -95,7 +96,7 @@ KISSY.add("gallery/hcs/1.0/index",function (S) {
                 getOtherAtrs("charset")
             }
             return "::before{content:'"+content+"';}";
-        };
+        }
         this.view.dev = function(){
 
             var temp ="";
@@ -119,6 +120,7 @@ KISSY.add("gallery/hcs/1.0/index",function (S) {
             $style = $("style.hcs_style")
             $style.html(temp);
             self.view.current();
+
         };
         this.view.undev = function(dom){
             self.view.uncurrent(dom);
@@ -169,6 +171,7 @@ KISSY.add("gallery/hcs/1.0/index",function (S) {
             });
         };
         this.view.formartCss = function(){
+
         };
         this.view.linkcss();
         this.view.dev();
@@ -706,6 +709,6 @@ KISSY.add("gallery/hcs/1.0/index",function (S) {
         self.view.dev();
     };
 
-    return HCS;
+    new HCS();
 
 });
