@@ -1,0 +1,22 @@
+{
+	"customerCommand":[
+		{
+			"name":"fn",
+			"out":"function %value%(){}"
+		},
+		{
+			"name":"update",
+			"out":"git pull origin '%value%||master'"
+		},
+		{
+			"name":"commit",
+			"out":"git commit -m'%value%' -a"
+		},
+		{
+			"name":"kfc",
+			"out":"肯德基"
+		}
+	],
+	"grid":"960*12*center",
+	"jsEditorTheme":"blackboard"
+}

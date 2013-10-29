@@ -9,34 +9,28 @@
 		fclose($fp);
 	*/
     $title = $_REQUEST["title"];
-	$content = $_REQUEST["content"];   
-	$path = $_REQUEST["path"];
-	$name = $title;
+	$content = $_REQUEST["content"];  
+	$path = dirname($title);
+	$path = "../".$path;
 
-	//$content = str_replace("    ","\n",$content);
-	///创建文件夹 
-	function createdir($dir){
-		if(file_exists($dir) && is_dir($dir)){
-		}else{
-			mkdir ($dir,0777);
-		}
+	function create_folders($dir){
+		return is_dir($dir) or (create_folders(dirname($dir)) and mkdir($dir,0777));
 	}
+	
 	///创建文件
-	function creat_file($PATH,$name,$content){
-		$sFile = $name;
-		/*
-		if (file_exists($PATH.$sFile)) {
+	function creat_file($title,$content){
+		if (file_exists($title)) {
 			creat_file();
 		}else {
-		*/
-			$fp= fopen($PATH.$sFile,"w");
+			$fp= fopen($title,"w");
 			fwrite($fp,$content);
 			fclose($fp);
-		//} 
+		} 
 		return $sFile;
 	}
-	createdir($path);
-	creat_file($path,$name,$content);
+	create_folders($path);
+
+	creat_file($title,$content);
 	/*
 	;
 		$handle=fopen($name,"w");
@@ -48,4 +42,5 @@
 		
 	*/
 
+	echo "成功";
 ?>
