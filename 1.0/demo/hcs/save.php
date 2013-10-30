@@ -11,23 +11,29 @@
     $title = $_REQUEST["title"];
 	$content = $_REQUEST["content"];  
 	$path = dirname($title);
-	$path = "../".$path;
 
+	echo "开始";
 	function create_folders($dir){
 		return is_dir($dir) or (create_folders(dirname($dir)) and mkdir($dir,0777));
 	}
 	
 	///创建文件
 	function creat_file($title,$content){
-		if (file_exists($title)) {
-			creat_file();
-		}else {
-			$fp= fopen($title,"w");
+		//echo "文件存在与否:".file_exists($title);
+		//if (file_exists($title)) {
+		//	creat_file();
+		//}else {
+		echo "文件地址:".$title;
+
+			$fp = fopen($title,"w+");
+			if($fp){
+				echo "ok";
+			}
+			echo "写入内容:".$content;
 			fwrite($fp,$content);
 			fclose($fp);
-		} 
-		return $sFile;
 	}
+	echo "路径:".$path;
 	create_folders($path);
 
 	creat_file($title,$content);

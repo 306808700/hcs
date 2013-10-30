@@ -2,11 +2,13 @@
     html simple coding
     @auth changyuan.lcy
 */
-console.log(KISSY);
 
+KISSY.NodeList.not = function(selector){
+    console.log(this);
+    //KISSY.all(selector);
+}
 KISSY.ready(function(S){
     S.IO.getJSON("config.json",function(config){
-        console.log(config);
         (function(S){
             var $ = S.all;
             var D = S.DOM;
@@ -17,23 +19,32 @@ KISSY.ready(function(S){
                 this.config = config||{};
                 this.current = null;
                 this.init();
+                localStorage.hcs_dev = false;
             };
             HCS.prototype.init = function(first_argument) {
-
+                this.tool();
                 this.view();
                 this.event();
-                this.tool();
+                this.tool._addHistory();
             };
             HCS.prototype.view = function(first_argument) {
                 var self = this;
                 this.tpl = {
-                    wrap:"<hcsplate class='hcs_wrap'></hcsplate>",
-                    place:"<hcsplate class='hcs_place'></hcsplate>",
+                    wrap:"<hcsp class='hcs_wrap'></hcsp>",
+                    place:"<hcsp class='hcs_place'></hcsp>",
                     input:"<input type='text' class='hcs_input' placeholder='BODY' />",
-                    tip:"<hcsplate class='hcs_tip'></hcsplate>",
+                    tip:"<hcsp class='hcs_tip'></hcsp>",
+
                     history:"<select class='hcs_history_select' title='历史记录'></select>",
-                    css:"<hcsplate class='hcs_css_p'><hcsplate></hcsplate></hcsplate>",
-                    background:"<hcsplate class='hcs_background'></hcsplate>"
+                    bgControl:"<hcsp class='hcs_bg'>BG</hcsp>",
+                    background:"<hcsp class='hcs_background'></hcsp>",
+                    cssDetail:"<hcsp class='hcs_cssDetail'>\
+                        <hcsp class='hcs_cssList'></hcsp>\
+                        <hcsp class='hcs_cssContent' contenteditable='true'>\
+                        </hcsp>\
+                        <hcsp class='hcs_cssClose'>×</hcsp>\
+                        <hcsp class='hcs_cssDrag'>css</hcsp>\
+                    </hcsp>",
                 };
 
                 this.$wrap = $(this.tpl.wrap);
@@ -41,19 +52,15 @@ KISSY.ready(function(S){
                 this.$tip = $(this.tpl.tip);
                 this.$history = $(this.tpl.history);
                 this.$background = $(this.tpl.background);
-
+                this.$bg = $(this.tpl.bgControl);
                 this.$wrap.append(this.$input).append(this.$history);
                 if(localStorage.hcs){
                     document.getElementsByTagName("html")[0].innerHTML = localStorage.hcs;
                     this.$tip.html(localStorage.hcs_path);
                 }
-                if(localStorage.hcs_img){
-                    self.$background.css({
-                        background:"url("+localStorage.hcs_img+") no-repeat"
-                    });
-                }
-                if($("hcsplate").length==0){
-                    $("body").after(this.$wrap).after($(this.tpl.place)).after(this.$tip).after(self.$background);
+
+                if($("hcsp").length==0){
+                    $("body").after(this.$wrap).after($(this.tpl.place)).after(this.$tip).after(self.$background).after(self.$bg);
                 }
                 var time = +new Date();
                 $("head").append('<link href="index.css?t='+time+'" rel="stylesheet" charset="utf-8" style="display:none !important " class="hcs_link">')
@@ -110,7 +117,7 @@ KISSY.ready(function(S){
 
                     var temp ="";
                     S.each($(document).all("*"),function(dom,index){
-                        if($(dom)[0].tagName=="HTML"||$(dom)[0].tagName=="SCRIPT"||$(dom)[0].tagName=="HCS"||$(dom)[0].tagName=="HCSPLATE"||$(dom).attr("class")=="hcs_input"||$(dom).attr("class")=="hcs_history_select"){
+                        if($(dom)[0].tagName=="HTML"||$(dom)[0].tagName=="SCRIPT"||$(dom)[0].tagName=="HCS"||$(dom)[0].tagName=="HCSP"||$(dom).attr("class")=="hcs_input"||$(dom).attr("class")=="hcs_history_select"){
                             return;
                         }
                         $(dom).attr("hcs",DOMNUM);DOMNUM++;
@@ -129,7 +136,7 @@ KISSY.ready(function(S){
                     $style = $("style.hcs_style")
                     $style.html(temp);
                     self.view.current();
-
+                    $("html").addClass('hcs_dev');
                 };
                 this.view.undev = function(dom){
                     self.view.uncurrent(dom);
@@ -152,12 +159,12 @@ KISSY.ready(function(S){
                             }
                         }
                     });
-
+                    
                     //$("style").html($("style").text());
                     return;
                 };
                 this.view.undevplate = function(dom){
-                    dom.all("hcsplate").remove();
+                    dom.all("hcsp").remove();
                     S.each(dom.all("script"),function(dom){
                         if($(dom).attr('src')&&$(dom).attr('src').indexOf("hcs")!=-1){
                             $(dom).remove();
@@ -169,6 +176,96 @@ KISSY.ready(function(S){
                         }
                     });
                     return;
+                };
+                this.view.cssDetail = function(){
+                    self.$cssDetail = $(self.tpl.cssDetail).appendTo($("html"));
+
+                    var list = self.$cssDetail.one(".hcs_cssList");
+                    var title = self.$cssDetail.one(".hcs_cssDrag");
+                    var close = self.$cssDetail.one(".hcs_cssClose");
+                    var content = self.$cssDetail.one(".hcs_cssContent");
+
+                    var list_li = "",temp = {};
+
+                    S.each($("link"),function(dom,index){
+                        if($(dom).hasClass("hcs_link")){
+                            return;
+                        }
+                        temp[index] = $(dom);
+                        list_li+="<hcsp class='hcs_cssList_li' linkid='"+index+"'>"+$(dom).attr("href")+"</hcsp>";
+                    });
+                    list.html(list_li);
+                    var first =  list.one(".hcs_cssList_li");
+                    
+                    function getCSS(linkid,href){
+                        content.attr("linkid",linkid);
+                        S.IO.get(href+"?t="+self.tool._nowTime(),function(result){
+                            result = result.replace(/;/g,";<br>    ").replace(/}/g,"}<br>    ").replace(/{/g,"{<br>    ");
+                            console.log(result);
+                            content[0].innerHTML=result;
+                        });
+                    }
+                    if(first){
+                        first.addClass("on");
+                        getCSS(first.attr("linkid"),first.html());
+                    }else{
+                        content.html("没有样式文件");
+                        content.removeAttr("contenteditable");
+                    }
+                    
+
+                    list.all(".hcs_cssList_li").on("click",function(){
+                        list.all(".hcs_cssList_li").removeClass("on");
+                        $(this).addClass("on");
+                        getCSS($(this).attr("linkid"),$(this).html());
+                    });
+
+                    content.on("keyup",function(){
+                        var el = $(this);
+                        function fn(){
+                            content.timekey = setTimeout(function(){
+                                var linkid = el.attr("linkid");
+                                self.tool._saveCss(temp[linkid],el.text());
+                                delete content.timekey;
+                            },300);
+                        }
+                        if(content.timekey){
+                            clearTimeout(content.timekey);
+                            fn();
+                        }else{
+                            fn();
+                        }
+                    });
+                    content.on("scroll",function(){
+                        return false;
+                    });
+                    close.on("click",function(){
+                        self.$cssDetail.remove();
+                    });
+
+                    self.plugin.overlay({
+                        ele:self.$cssDetail
+                    });
+                    self.plugin.drag.apply(title,[
+                        function(e){
+                            // down
+                            this.x = e.clientX - parseInt(self.$cssDetail.css("left"));
+                            this.y = e.clientY - parseInt(self.$cssDetail.css("top"));
+                            
+                        },
+                        function(e){
+                            // move
+                            var left = e.clientX-this.x;
+                            var top =  e.clientY-this.y;
+                            self.$cssDetail.css({
+                                left:left,
+                                top:top
+                            });
+
+                        },
+                        function(){
+                        }
+                    ]);
                 };
                 this.view.linkcss = function(){
                     S.each($("html").all("link"),function(dom){
@@ -188,18 +285,26 @@ KISSY.ready(function(S){
                     var arr = op.split("*");
                     var num = arr[1];
                     var width = arr[0];
-                    var height = ($(window).height()-40);
-                    var left = ($(window).width()-width)/2;
-                    var str = '<hcsplate class="hcs_gird" style="left:'+left+'px;width:'+width+'px;height:'+($(window).height()-40)+'px;">'
-                    for(var i=0;i<num;i++){
-                        str+='<hcsplate class="hcs_gird_li" style="width:'+(width/num-1)+'px;height:'+height+'px"><hcsplate class="hcs_gird_li_span">'+width/num+'</hcsplate></hcsplate>'
+                    var height;
+                    if($(document).height()>$(window).height()){
+                        height = ($(document).height()-40);
+                    }else{
+                        height = ($(window).height()-40); 
                     }
-                    str+='</hcsplate>';
+                    var left = ($(window).width()-width)/2;
+                    var str = '<hcsp class="hcs_gird" style="left:'+left+'px;width:'+width+'px;height:'+height+'px;">'
+                    for(var i=0;i<num;i++){
+                        str+='<hcsp class="hcs_gird_li" style="width:'+(width/num-1)+'px;height:'+height+'px"><hcsp class="hcs_gird_li_span">'+width/num+'</hcsp></hcsp>'
+                    }
+                    str+='</hcsp>';
                     $("html").append(str);
                 };
-                this.view.linkcss();
+                //this.view.linkcss();
                 if(localStorage.hcs_dev==true){
                     this.view.dev();
+                }
+                if(localStorage.hcs_img){
+                    self.tool._setbg(localStorage.hcs_img);
                 }
             };
             HCS.prototype.event = function(first_argument) {
@@ -271,18 +376,18 @@ KISSY.ready(function(S){
                     self.init();
                 });
 
-                self.plugin.drag.apply(self.$background,[
+                self.plugin.drag.apply(self.$bg,[
                     function(e){
                         // down
-                        this.x = e.clientX - parseInt($(this).css("left"));
-                        this.y = e.clientY - parseInt($(this).css("top"));
+                        this.x = e.clientX - parseInt(self.$background.css("left"));
+                        this.y = e.clientY - parseInt(self.$background.css("top"));
                         
                     },
                     function(e){
                         // move
                         var left = e.clientX-this.x;
                         var top =  e.clientY-this.y;
-                        $(this).css({
+                        self.$background.css({
                             left:left,
                             top:top
                         });
@@ -292,17 +397,19 @@ KISSY.ready(function(S){
                     }
                 ]);
 
-                self.$background.on("mousewheel",function(e){
-                    var opacity = Number( $(this).css("opacity") );
+                self.$bg.on("mousewheel",function(e){
+                    var opacity = Number( self.$background.css("opacity") );
                     opacity = opacity*(10+e.deltaY)/10;
-                    $(this).css({
+                    self.$background.css({
                         opacity:opacity
                     });
+                    return false;
                     //localStorage.hcs_img_opacity = opacity;
                 });
                 $(document).on("click",function(e){
                     if($(e.target).hasClass("hcs_dev")){
                         self.tool._setcur($(e.target));
+                        self.view.current();
                         self.current.fire("focus");
                         //self.$input.fire("focus");
                     }
@@ -324,6 +431,18 @@ KISSY.ready(function(S){
             };
             HCS.prototype.tool = function(){
                 var self = this;
+                self.tool._setbg = function(url){
+                    var img = new Image();
+                    img.src = url;
+                    img.onload  = function(){
+                        self.$background.css({
+                            background:"url("+url+") no-repeat",
+                            height:img.height,
+                            width:img.width,
+                            opacity:0.3
+                        });
+                    };
+                };
                 self.tool._setcur = function(value,type){
                     // 属于节点关系
                     if(!value){
@@ -351,7 +470,9 @@ KISSY.ready(function(S){
                         else if(clas) self.$input.attr("placeholder",tagName+"."+clas);
                         else self.$input.attr("placeholder",tagName);
                     }
-                    self.view.current();
+                    if(localStorage.hcs_dev==true){
+                        self.view.current();
+                    }
                 };
                 self.tool._setAttr = function(value){
                     // 解析字符串
@@ -401,7 +522,9 @@ KISSY.ready(function(S){
                             for(var i=0;i<clas.length;i++){
                                 self.current.removeAttr("class");
                                 self.current.addClass(clas[i].replace(".",""));
-                                self.current.addClass("hcs_dev").addClass("hcs_current");
+                                if(localStorage.hcs_dev==true){
+                                    self.current.addClass("hcs_dev").addClass("hcs_current");
+                                }
                             }
                         }
                     }          
@@ -452,7 +575,7 @@ KISSY.ready(function(S){
                         temp+=str.split("#")[0]+" id = "+str.split("#")[1];
                     }
                     if(str.indexOf("&")!=-1){
-                        var atrs = str.match(/&[a-zA-Z_\d]*=["'.a-zA-Z_\d#_-]*|&[a-zA-Z_\d]*/g);
+                        var atrs = str.match(/&[a-zA-Z_\d]*=["'.a-zA-Z_\d#\_\-\:\/u4e00-u9fa5]*|&[a-zA-Z_\d]*/);
                         for(var i=0,len=atrs.length;i<len;i++){
                             var a = atrs[i].split("=")[0].replace(/[&'"]/,"");
                             var b = atrs[i].split("=")[1]||"";
@@ -478,13 +601,26 @@ KISSY.ready(function(S){
                         return str;
                     }
                 };
-                self.tool._saveCss = function(){
-                    S.each($("html").all("link"),function(dom){
-                        var href = $(dom).attr("href");
-                        var css = encodeURIComponent($(dom).text());
-                        //$(dom).attr("href",href+"?t="+self.tool._nowTime());
-                        S.IO.post("save.php?title="+href+"&content="+css);
-                    });
+                self.tool._saveCss = function(link,content){
+
+                    if(link){
+                        var href = link.attr("href");
+                        if(href.indexOf("?")!=-1){
+                            href = href.split("?")[0];
+                        }
+                        S.IO.post("save.php?title="+href+"&content="+encodeURIComponent(content),function(){
+                            href +="?t="+self.tool._nowTime();
+                            link.attr('href',href);
+                        });
+                    }else{
+                    
+                        S.each($("html").all("link"),function(dom){
+                            var href = encodeURIComponent($(dom).attr("href"));
+                            var css = encodeURIComponent($(dom).text());
+                            //$(dom).attr("href",href+"?t="+self.tool._nowTime());
+                            S.IO.post("save.php?title="+href+"&content="+css);
+                        });
+                    }
                 };
                 self.tool._formartCss = function(str){
                     var attr = str.match(/[.#a-zA-Z\d._,:-]+/g);
@@ -588,8 +724,38 @@ KISSY.ready(function(S){
                     return time;
                 };
 
+                self.tool._setDrag = function(dom){
+                    self.plugin.drag.apply(dom,[
+                        function(e){
+                            // down
+                            this.x = e.clientX - parseInt($(this).css("left"));
+                            this.y = e.clientY - parseInt($(this).css("top"));
+                            
+                        },
+                        function(e){
+                            // move
+                            var left = e.clientX-this.x;
+                            var top =  e.clientY-this.y;
+                            $(this).css({
+                                left:left,
+                                top:top
+                            });
 
-                self.tool._addHistory();
+                        },
+                        function(){
+                        }
+                    ]);
+                };
+                self.tool._showCss = function(){
+                    self.view.cssDetail();
+                };
+                self.tool._hideCss = function(){
+                    if(self.$cssDetail){
+                        self.$cssDetail.remove();
+                    }
+                };
+
+                
             };
             HCS.prototype.render = function(value){
                 var self = this;
@@ -660,7 +826,6 @@ KISSY.ready(function(S){
                     var temp = self.current[0].outerHTML.toString();
                         temp = temp.replace(eval("/"+self.current[0].tagName.toUpperCase()+"/ig"),arr[1]);
                     var cur = $(self.tool._getEl(temp));
-                    console.log(cur);
                         cur.html(html);
                     self.current.after(cur);
                     self.current.remove();
@@ -700,21 +865,28 @@ KISSY.ready(function(S){
                 }
                 if(arr[0]=="dev"){
                     this.view.dev();
+                    this.tool._hideCss();
                     localStorage.hcs_dev = true;
                 }
                 if(arr[0]=="undev"){
                     this.view.undev($("html"));
+                    
+                    $("html").removeClass("hcs_dev");
                     localStorage.hcs_dev = false;
                     return;
                 }
                 if(arr[0]=="css"){
-                    console.log("css")
-                    var link = $("<link href='"+arr[1]+"' rel='stylesheet' />");
-                    $("head").append(link);
-                    S.IO.get(arr[1],function(str){
-                        console.log(str);
-                    });
-                    self.tool._setcur(link);
+                    if(arr[1]){
+                        var link = $("<link href='"+arr[1]+"' rel='stylesheet' />");
+                        $("head").append(link);
+                        S.IO.get(arr[1],function(str){
+                        });
+                        self.tool._setcur(link);
+                    }else{
+                        if(localStorage.hcs_dev=="false"){
+                            self.tool._showCss();
+                        }
+                    }
                 }
                 if(arr[0]=="js"){
                     var script = document.createElement("script");
@@ -733,17 +905,18 @@ KISSY.ready(function(S){
                 }
                 if(arr[0]=="grid"){
                     this.view.grid(arr[1]);
+                    return;
                 }
                 if(arr[0]=="column"){
 
                 }
                 if(arr[0]=="ungrid"){
                     $(".hcs_gird").remove();
+                    return;
                 }
                 if(arr[0]=="bg"){
-                    self.$background.css({
-                        background:"url("+arr[1]+") no-repeat"
-                    });
+
+                    self.tool._setbg(arr[1]);
                     localStorage.hcs_img = arr[1];
                 }
                 if(arr[0]=="unbg"){
@@ -764,7 +937,7 @@ KISSY.ready(function(S){
                         localStorage.hcs_path = arr[1];
                     }
                     var content = encodeURIComponent("<!doctype html>\n<html>\n"+localStorage.hcs+"\n</html>");
-                    S.IO.post("save.php?title="+localStorage.hcs_path+"&content="+content);
+                    S.IO.post("save.php?title="+encodeURIComponent(localStorage.hcs_path)+"&content="+content);
                     this.$tip.html(localStorage.hcs_path);
                     return;
                 }
@@ -786,40 +959,59 @@ KISSY.ready(function(S){
                 if(arr[0].match(/^\d*$/)){
                     self.tool._setcur(self.current[arr[0]]);
                 }
-                if(localStorage.hcs_dev==true){
+                if(localStorage.hcs_dev=="true"){
                     self.view.dev();
                 }
             };
             HCS.prototype.plugin = {
-               overlay:function(options){
-                    var opts = S.merge(options,{
+                overlay:function(options){
+                    var opts = S.merge({
                         opacity:0.6,
                         background:"#666",
-                        zIndex:999
-                    });
+                        modalClick:false
+                    },options);
                     return ({
                         view:function(){
-                            _class.$overlay.css({
-                                top:0,
-                                left:0,
-                                height:$(document).height(),
-                                width:$(window).width(),
-                                position:"absolute",
-                                opacity:opts.opacity,
-                                background:opts.background,
-                                zIndex:parseInt(opts.ele.css("z-index"))-1||opts.zIndex
+                            if(opts.modal){
+                                self.$overlay = $("<hcsp class='overlay'></hcsp>");
+                                self.$overlay.appendTo($("html"));
+                                this.$overlay.css({
+                                    top:0,
+                                    left:0,
+                                    height:$(document).height(),
+                                    width:$(window).width(),
+                                    position:"absolute",
+                                    opacity:opts.opacity,
+                                    background:opts.background,
+                                    zIndex:parseInt(opts.ele.css("z-index"))-1||opts.zIndex
+                                });
+                            }
+                            opts.ele.css({
+                                height:$(window).height()-100,
+                                width:$(window).width()*0.7
+                            });
+                            opts.ele.css({
+                                left:($(window).width()-opts.ele.width())/2,
+                                top:($(window).height()-opts.ele.height())/2
+
                             });
                         },
                         event:function(){
+                            var self = this;
                             $(window).on("resize",function(){
-                                _class.view();
+                                self.view();
                             });
+                            if(opts.modalClick){
+                                self.$overlay.on("click",function(){
+                                    self.$overlay.remove();
+                                    opts.ele.remove();
+                                });
+                            }
                         },
                         init:function(){
-                            _class.$overlay = $("<div class='overlay'></div>");
-                            _class.$overlay.appendTo($("body"));
-                            _class.view();
-                            _class.event();
+                            var self = this;
+                            self.view();
+                            self.event();
                         }
                     }).init();
                 },
@@ -851,6 +1043,17 @@ KISSY.ready(function(S){
                         });
                     });
                     return ele;
+                },
+                not:function(dom,selector){
+                    var notDom = $(selector);
+                    S.each(notDom,function(d){
+                        S.each(dom,function(b,i){
+                            if(d==b){
+                                delete dom[i];
+                            }
+                        });
+                    });
+                    return dom;
                 }
             };
 
