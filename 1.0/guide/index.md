@@ -2,10 +2,15 @@
 
 hcs是一款概念式的以命令行方式，快速构建html页面的在线编辑工具 2013-10-21 至今
 
+
 * 版本：1.0
 * 作者：changyuan.lcy (核心)
 * demo：[http://gallery.kissyui.com/hcs/1.0/demo/index.html](http://gallery.kissyui.com/hcs/1.0/demo/index.html)
 * 请在chrome浏览器下使用。
+
+
+## 远景
+* 有一个浏览器就可以开始你的前端之旅了。用它完成开发预览调试。
 
 ## 初始化组件
 
