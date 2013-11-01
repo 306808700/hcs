@@ -3,10 +3,7 @@
     @auth changyuan.lcy
 */
 
-KISSY.NodeList.not = function(selector){
-    console.log(this);
-    //KISSY.all(selector);
-}
+
 KISSY.ready(function(S){
     S.IO.getJSON("config.json",function(config){
         (function(S){
@@ -40,8 +37,8 @@ KISSY.ready(function(S){
                     background:"<hcsp class='hcs_background'></hcsp>",
                     cssDetail:"<hcsp class='hcs_cssDetail'>\
                         <hcsp class='hcs_cssList'></hcsp>\
-                        <hcsp class='hcs_cssContent' contenteditable='true'>\
-                        </hcsp>\
+                        <textarea class='hcs_cssContent' contenteditable='true'>\
+                        </textarea>\
                         <hcsp class='hcs_cssClose'>×</hcsp>\
                         <hcsp class='hcs_cssDrag'>css</hcsp>\
                     </hcsp>",
@@ -63,8 +60,20 @@ KISSY.ready(function(S){
                     $("body").after(this.$wrap).after($(this.tpl.place)).after(this.$tip).after(self.$background).after(self.$bg);
                 }
                 var time = +new Date();
-                $("head").append('<link href="index.css?t='+time+'" rel="stylesheet" charset="utf-8" style="display:none !important " class="hcs_link">')
-                
+                $("head").append('<link href="index.css?t='+time+'" rel="stylesheet" charset="utf-8" style="display:none !important " class="hcs_link">');
+
+                $("head").append('<link rel="stylesheet" href="/hcs/codemirror-3.15/lib/codemirror.css" class="hcs_link">');
+
+                self.tool._importScript("/hcs/codemirror-3.15/lib/codemirror.js");
+                var mirrorKey = setInterval(function(){
+                    if(CodeMirror){
+                        clearInterval(mirrorKey);
+                        self.tool._importScript("/hcs/codemirror-3.15/mode/css/css.js");
+                    }
+                },17);
+                self.tool._importScript("/hcs/format/cssformat.js");
+
+
                 this.current = $("body");
                 this.view.current = function(){
                     $("html").all(".hcs_current")
@@ -117,18 +126,14 @@ KISSY.ready(function(S){
 
                     var temp ="";
                     S.each($(document).all("*"),function(dom,index){
-                        if($(dom)[0].tagName=="HTML"||$(dom)[0].tagName=="SCRIPT"||$(dom)[0].tagName=="HCS"||$(dom)[0].tagName=="HCSP"||$(dom).attr("class")=="hcs_input"||$(dom).attr("class")=="hcs_history_select"){
+                        if($(dom)[0].tagName=="HTML"||$(dom)[0].tagName=="SCRIPT"||$(dom)[0].tagName=="HCS"||$(dom)[0].tagName=="HCSP"||$(dom).attr("class")=="hcs_input"||$(dom).attr("class")=="hcs_history_select"||$(dom).hasClass("hcs_link")){
                             return;
                         }
                         $(dom).attr("hcs",DOMNUM);DOMNUM++;
                         var attr_hcs = $(dom).attr("hcs");
                         temp+="[hcs='"+attr_hcs+"']"+self.view.addMark(dom);
                         $(dom).addClass("hcs_dev");
-                        if($(dom)[0].tagName=="LINK"&&!$(dom).hasClass("hcs_style")){
-                            S.IO.get($(dom).attr("href"),function(str){
-                                $(dom).html(str);
-                            });
-                        }
+                        
                     });
                     if($("style.hcs_style").length==0){
                         $("head").append($("<style class='hcs_style'></style>"));
@@ -178,7 +183,7 @@ KISSY.ready(function(S){
                     return;
                 };
                 this.view.cssDetail = function(){
-                    self.$cssDetail = $(self.tpl.cssDetail).appendTo($("html"));
+                    self.$cssDetail = $(self.tpl.cssDetail);
 
                     var list = self.$cssDetail.one(".hcs_cssList");
                     var title = self.$cssDetail.one(".hcs_cssDrag");
@@ -191,26 +196,71 @@ KISSY.ready(function(S){
                         if($(dom).hasClass("hcs_link")){
                             return;
                         }
+                        var href = $(dom).attr("href");
+                        href = href.split("?")[0];
                         temp[index] = $(dom);
-                        list_li+="<hcsp class='hcs_cssList_li' linkid='"+index+"'>"+$(dom).attr("href")+"</hcsp>";
+                        list_li+="<hcsp class='hcs_cssList_li' linkid='"+index+"'>"+href+"</hcsp>";
                     });
                     list.html(list_li);
                     var first =  list.one(".hcs_cssList_li");
                     
+
+                    //    <script src="../addon/search/searchcursor.js"></script>
+    //<script src="../addon/search/match-highlighter.js"></script>
                     function getCSS(linkid,href){
                         content.attr("linkid",linkid);
                         S.IO.get(href+"?t="+self.tool._nowTime(),function(result){
-                            result = result.replace(/;/g,";<br>    ").replace(/}/g,"}<br>    ").replace(/{/g,"{<br>    ");
-                            console.log(result);
-                            content[0].innerHTML=result;
+                            
+                            if(!result){
+                                result = "/* the new css */";
+                            }
+                            result = result.replace("/* the new css */","");
+                            result = cssbeautify(result,{
+                                indent:"  "
+                            });
+                            //result = result.replace(/;/g,";<br>    ").replace(/}/g,"}<br>    ").replace(/{/g,"{<br>    ");
+                            content.val(result);
+                            CodeMirror.fromTextArea(content[0], {
+                                lineNumbers: true,
+                                //highlightSelectionMatches: {showToken: /\w/},
+                                //styleActiveLine: true
+                            });
+                            $(".CodeMirror").on("keyup",function(){
+                                var el = $(this).one(".CodeMirror-code").all("pre");
+                                var str = "";
+                                S.each(el,function(dom){
+                                    str+=$(dom).text();
+                                });
+                                str = self.plugin.CSSdecode(str);
+                                function fn(){
+                                    content.timekey = setTimeout(function(){
+                                        var linkid = content.attr("linkid");
+                                        self.tool._saveCss(temp[linkid],str);
+                                        delete content.timekey;
+                                    },300);
+                                }
+                                if(content.timekey){
+                                    clearTimeout(content.timekey);
+                                    fn();
+                                }else{
+                                    fn();
+                                }
+                            });
                         });
                     }
                     if(first){
                         first.addClass("on");
                         getCSS(first.attr("linkid"),first.html());
                     }else{
-                        content.html("没有样式文件");
+                        alert("please import a css ");
+                        return;
+                        content.val("/* the new css */");
                         content.removeAttr("contenteditable");
+                        CodeMirror.fromTextArea(content[0], {
+                            lineNumbers: true,
+                            //highlightSelectionMatches: {showToken: /\w/},
+                            //styleActiveLine: true,
+                        });
                     }
                     
 
@@ -220,22 +270,9 @@ KISSY.ready(function(S){
                         getCSS($(this).attr("linkid"),$(this).html());
                     });
 
-                    content.on("keyup",function(){
-                        var el = $(this);
-                        function fn(){
-                            content.timekey = setTimeout(function(){
-                                var linkid = el.attr("linkid");
-                                self.tool._saveCss(temp[linkid],el.text());
-                                delete content.timekey;
-                            },300);
-                        }
-                        if(content.timekey){
-                            clearTimeout(content.timekey);
-                            fn();
-                        }else{
-                            fn();
-                        }
-                    });
+                    
+                    
+
                     content.on("scroll",function(){
                         return false;
                     });
@@ -266,6 +303,7 @@ KISSY.ready(function(S){
                         function(){
                         }
                     ]);
+                    self.$cssDetail.appendTo($("html"));
                 };
                 this.view.linkcss = function(){
                     S.each($("html").all("link"),function(dom){
@@ -306,6 +344,9 @@ KISSY.ready(function(S){
                 if(localStorage.hcs_img){
                     self.tool._setbg(localStorage.hcs_img);
                 }
+
+                /* 收集link  href */
+                this.tool._selectLink();
             };
             HCS.prototype.event = function(first_argument) {
                 var self = this;
@@ -431,6 +472,20 @@ KISSY.ready(function(S){
             };
             HCS.prototype.tool = function(){
                 var self = this;
+                self._linkArr = [];
+                self.tool._selectLink = function(){
+                    S.each($("head").all("link"),function(dom){
+                        if(!$(dom).hasClass("hcs_link")){
+                            self._linkArr.push($(dom).attr("href"));
+                        }
+                    });
+                };
+                self.tool._importScript = function(src){
+                    var script = document.createElement("script");
+                    script.src = src;
+                    script.className = "hcs_script";
+                    $("head")[0].appendChild(script);
+                };
                 self.tool._setbg = function(url){
                     var img = new Image();
                     img.src = url;
@@ -612,7 +667,9 @@ KISSY.ready(function(S){
                             href +="?t="+self.tool._nowTime();
                             link.attr('href',href);
                         });
-                    }else{
+                    }
+                    /*
+                    else{
                     
                         S.each($("html").all("link"),function(dom){
                             var href = encodeURIComponent($(dom).attr("href"));
@@ -621,6 +678,7 @@ KISSY.ready(function(S){
                             S.IO.post("save.php?title="+href+"&content="+css);
                         });
                     }
+                    */
                 };
                 self.tool._formartCss = function(str){
                     var attr = str.match(/[.#a-zA-Z\d._,:-]+/g);
@@ -814,11 +872,11 @@ KISSY.ready(function(S){
                         cur = self.tool._getEl(str);
                     }
                     self.current[arr[0]](cur);
-                    /*
+                    
                     if(typeof cur == "object"){
                         self.tool._setcur(cur);
                     }
-                    */
+                    
                 }
                 if(arr[0]=="change"){
                     var html = self.current.html();
@@ -877,15 +935,18 @@ KISSY.ready(function(S){
                 }
                 if(arr[0]=="css"){
                     if(arr[1]){
+                        if($("head").all("[href='"+arr[1]+"']").length>0){
+                            console.log(123);
+                        }
                         var link = $("<link href='"+arr[1]+"' rel='stylesheet' />");
                         $("head").append(link);
                         S.IO.get(arr[1],function(str){
                         });
                         self.tool._setcur(link);
                     }else{
-                        if(localStorage.hcs_dev=="false"){
+                        //if(localStorage.hcs_dev=="false"){
                             self.tool._showCss();
-                        }
+                        //}
                     }
                 }
                 if(arr[0]=="js"){
@@ -964,6 +1025,21 @@ KISSY.ready(function(S){
                 }
             };
             HCS.prototype.plugin = {
+                CSSdecode:function(code) { 
+                    code = code.replace(/(\s){2,}/ig,'$1'); 
+                    code = code.replace(/(\S)\s*\{/ig,'$1{\n'); 
+                    code = code.replace(/\*\/(.[^\}\{]*)}/ig,'\*\/\n$1}'); 
+                    code = code.replace(/\/\*/ig,'\/\*'); 
+                    code = code.replace(/;\s*(\S)/ig,';\n\t$1'); 
+                    code = code.replace(/\}\s*(\S)/ig,'\}\n$1'); 
+                    code = code.replace(/\n\s*\}/ig,'\n\}'); 
+                    code = code.replace(/\{\s*(\S)/ig,'\{\n\t$1'); 
+                    code = code.replace(/(\S)\s*\*\//ig,'$1\*\/'); 
+                    code = code.replace(/\*\/\s*([^\}\{]\S)/ig,'\*\/\n\t$1'); 
+                    code = code.replace(/(\S)\}/ig,'$1\n\}'); 
+                    code = code.replace(/(\n){2,}/ig,'\n'); 
+                    return code; 
+                },
                 overlay:function(options){
                     var opts = S.merge({
                         opacity:0.6,

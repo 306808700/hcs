@@ -1,1 +1,12 @@
-.abc{color:orange;}
+.logo{
+	color: green;
+	font-size: 140px;
+	font-weight: bold;
+}
+.nav{
+	color: orange;
+}
+.nav li{
+	float: left;
+	box-show:1px float:left;
+} 
