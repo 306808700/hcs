@@ -12,13 +12,14 @@ KISSY.ready(function(S){
             var DOMNUM = 0;
             var __HISTORY = {length:0};
             var __HISTORY_key;
+            localStorage.hcs_dev = false;
             function HCS(config){
                 this.config = config||{};
                 this.current = null;
                 this.init();
-                localStorage.hcs_dev = false;
             };
             HCS.prototype.init = function(first_argument) {
+
                 this.tool();
                 this.view();
                 this.event();
@@ -52,6 +53,7 @@ KISSY.ready(function(S){
                 this.$bg = $(this.tpl.bgControl);
                 this.$wrap.append(this.$input).append(this.$history);
                 if(localStorage.hcs){
+                    console.log(localStorage.hcs_dev);
                     document.getElementsByTagName("html")[0].innerHTML = localStorage.hcs;
                     this.$tip.html(localStorage.hcs_path);
                 }
@@ -62,16 +64,15 @@ KISSY.ready(function(S){
                 var time = +new Date();
                 $("head").append('<link href="index.css?t='+time+'" rel="stylesheet" charset="utf-8" style="display:none !important " class="hcs_link">');
 
+                
                 $("head").append('<link rel="stylesheet" href="/hcs/codemirror-3.15/lib/codemirror.css" class="hcs_link">');
-
+/*
                 self.tool._importScript("/hcs/codemirror-3.15/lib/codemirror.js");
-                var mirrorKey = setInterval(function(){
-                    if(CodeMirror){
-                        clearInterval(mirrorKey);
+                setTimeout(function(){
                         self.tool._importScript("/hcs/codemirror-3.15/mode/css/css.js");
-                    }
                 },17);
-                self.tool._importScript("/hcs/format/cssformat.js");
+*/
+               // self.tool._importScript("/hcs/format/cssformat.js");
 
 
                 this.current = $("body");
@@ -123,7 +124,7 @@ KISSY.ready(function(S){
                     return "::before{content:'"+content+"';}";
                 }
                 this.view.dev = function(){
-
+                    console.log(123);
                     var temp ="";
                     S.each($(document).all("*"),function(dom,index){
                         if($(dom)[0].tagName=="HTML"||$(dom)[0].tagName=="SCRIPT"||$(dom)[0].tagName=="HCS"||$(dom)[0].tagName=="HCSP"||$(dom).attr("class")=="hcs_input"||$(dom).attr("class")=="hcs_history_select"||$(dom).hasClass("hcs_link")){
@@ -206,7 +207,7 @@ KISSY.ready(function(S){
                     
 
                     //    <script src="../addon/search/searchcursor.js"></script>
-    //<script src="../addon/search/match-highlighter.js"></script>
+                    //<script src="../addon/search/match-highlighter.js"></script>
                     function getCSS(linkid,href){
                         content.attr("linkid",linkid);
                         S.IO.get(href+"?t="+self.tool._nowTime(),function(result){
@@ -338,7 +339,8 @@ KISSY.ready(function(S){
                     $("html").append(str);
                 };
                 //this.view.linkcss();
-                if(localStorage.hcs_dev==true){
+                if(localStorage.hcs_dev == "true"){
+                    console.log("dev")
                     this.view.dev();
                 }
                 if(localStorage.hcs_img){
@@ -416,7 +418,19 @@ KISSY.ready(function(S){
                     __HISTORY_key = val;
                     self.init();
                 });
-
+                self.$bg.on("click",function(dom){
+                    if(self.$background.css("zIndex")==70){
+                       self.$background.css({
+                            "zIndex":-1,
+                            opacity:0.3
+                        }); 
+                    }else{
+                        self.$background.css({
+                            "zIndex":70,
+                            opacity:1
+                        });
+                    }
+                });
                 self.plugin.drag.apply(self.$bg,[
                     function(e){
                         // down
@@ -925,6 +939,7 @@ KISSY.ready(function(S){
                     this.view.dev();
                     this.tool._hideCss();
                     localStorage.hcs_dev = true;
+                    return;
                 }
                 if(arr[0]=="undev"){
                     this.view.undev($("html"));
@@ -935,9 +950,11 @@ KISSY.ready(function(S){
                 }
                 if(arr[0]=="css"){
                     if(arr[1]){
+                        /*
                         if($("head").all("[href='"+arr[1]+"']").length>0){
                             console.log(123);
                         }
+                        */
                         var link = $("<link href='"+arr[1]+"' rel='stylesheet' />");
                         $("head").append(link);
                         S.IO.get(arr[1],function(str){
