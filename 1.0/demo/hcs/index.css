@@ -113,7 +113,7 @@ body{
 	color: #000;
 	padding: 5px;
 }
-.hcs_bg{
+.hcs_bg,.hcs_color{
 	position: fixed;
 	bottom: 40px;
 	right: 0px;
@@ -124,6 +124,21 @@ body{
 	font-size: 14px;
 	color: #fff;
 	padding: 5px;
+	box-shadow: 0px 0px 3px #333;
+}
+.hcs_color{
+	bottom: 80px;
+	background:-webkit-linear-gradient(yellow,orange,red,blue,purple);
+
+}
+.hcs_color_text{
+	position: absolute;
+	top: -20px;
+	height: 20px;
+	color: #336699;
+	background: #fff;
+	left: -15px;
+	display: none;
 }
 .hcs_dev::before {
 	color: #000;

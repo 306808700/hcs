@@ -42,6 +42,7 @@ KISSY.ready(function(S){
                         <hcsp class='hcs_cssClose'>×</hcsp>\
                         <hcsp class='hcs_cssDrag'>css</hcsp>\
                     </hcsp>",
+                    colorControl:"<hcsp class='hcs_color'>CO</hcsp>"
                 };
 
                 this.$wrap = $(this.tpl.wrap);
@@ -50,6 +51,7 @@ KISSY.ready(function(S){
                 this.$history = $(this.tpl.history);
                 this.$background = $(this.tpl.background);
                 this.$bg = $(this.tpl.bgControl);
+                this.$color = $(this.tpl.colorControl);
                 this.$wrap.append(this.$input).append(this.$history);
                 if(localStorage.hcs){
                     document.getElementsByTagName("html")[0].innerHTML = localStorage.hcs;
@@ -57,7 +59,9 @@ KISSY.ready(function(S){
                 }
 
                 if($("hcsp").length==0){
-                    $("body").after(this.$wrap).after($(this.tpl.place)).after(this.$tip).after(self.$background).after(self.$bg);
+                    $("body").after(this.$wrap).after($(this.tpl.place))
+                    .after(this.$tip).after(self.$background).after(self.$bg)
+                    .after(this.$color);
                 }
                 var time = +new Date();
                 $("head").append('<link href="index.css?t='+time+'" rel="stylesheet" charset="utf-8" style="display:none !important " class="hcs_link">');
@@ -447,6 +451,33 @@ KISSY.ready(function(S){
                     return false;
                     //localStorage.hcs_img_opacity = opacity;
                 });
+
+                self.plugin.drag.apply(self.$color,[
+                    function(e){
+                        
+                    },
+                    function(e){
+
+                    },
+                    function(e){
+                        var x = e.clientX;
+                        var y = e.clientY;
+                        self.plugin.getColor(x,y,function(color){
+                            self.$color.css({
+                                background:color
+                            });
+                            self.$color.attr("title",
+                                self.plugin.colorHex(
+                                    self.$color.css("background-color")
+                                )
+                            );
+
+
+                        });
+                    }
+                ]);
+
+
                 $(document).on("click",function(e){
                     if($(e.target).hasClass("hcs_dev")){
                         self.tool._setcur($(e.target));
@@ -935,9 +966,9 @@ KISSY.ready(function(S){
                 }
                 if(arr[0]=="css"){
                     if(arr[1]){
-                        if($("head").all("[href='"+arr[1]+"']").length>0){
-                            console.log(123);
-                        }
+                        //if($("head").all("[href='"+arr[1]+"']").length>0){
+                         //   console.log(123);
+                        //}
                         var link = $("<link href='"+arr[1]+"' rel='stylesheet' />");
                         $("head").append(link);
                         S.IO.get(arr[1],function(str){
@@ -1119,6 +1150,71 @@ KISSY.ready(function(S){
                         });
                     });
                     return ele;
+                },
+                colorHex:function(src){
+                    /*RGB颜色转换为16进制*/
+                    var reg = /^#([0-9a-fA-f]{3}|[0-9a-fA-f]{6})$/;
+                    var that = src;
+                    if(/^(rgb|RGB)/.test(that)){
+                        var aColor = that.replace(/(?:\(|\)|rgb|RGB)*/g,"").split(",");
+                        var strHex = "#";
+                        for(var i=0; i<aColor.length; i++){
+                            var hex = Number(aColor[i]).toString(16);
+                            if(hex === "0"){
+                                hex += hex; 
+                            }
+                            strHex += hex;
+                        }
+                        if(strHex.length !== 7){
+                            strHex = that;  
+                        }
+                        return strHex;
+                    }else if(reg.test(that)){
+                        var aNum = that.replace(/#/,"").split("");
+                        if(aNum.length === 6){
+                            return that;    
+                        }else if(aNum.length === 3){
+                            var numHex = "#";
+                            for(var i=0; i<aNum.length; i+=1){
+                                numHex += (aNum[i]+aNum[i]);
+                            }
+                            return numHex;
+                        }
+                    }else{
+                        return that;    
+                    }
+                },
+                getColor:function(x,y,callback){
+                    
+                    function draw(img) {
+                        var _self = this;
+                        var canvas = document.createElement("canvas");
+                        canvas.width = $(document).width();
+                        canvas.height = $(document).height();
+                        var context = canvas.getContext("2d");
+                        context.shadowBlur = 20;
+                        context.shadowColor = "#DDDDDD";
+                        context.drawImage(img, 0, 0);
+                        var imageData = context.getImageData(0, 0, 10, 10);
+                        var pixel = imageData.data;
+                        //for (var i = 0, length = pixel.length; i < length; i += 4) {
+                       ////     console.log(i+":rgb("+pixel[i]+","+pixel[i+1]+","+pixel[i+2]+")");
+                        //}
+                        var canvasOffset = $(canvas).offset();
+                        var canvasX = Math.floor(x - canvasOffset.left);
+                        var canvasY = Math.floor(y - canvasOffset.top);
+                        // 获取该点像素的数据
+                        var imageData = context.getImageData(canvasX, canvasY, 1, 1);
+                       // 获取该点像素数据
+                        var pixel = imageData.data;
+                        var pixelColor = "rgba(" + pixel[0] + "," + pixel[1] + "," + pixel[2] + "," + pixel[3] + ")";
+                        callback(pixelColor);
+                    }
+                    var img = new Image();
+                    img.src = localStorage.hcs_img;
+                    img.onload = function () {
+                        draw(img);
+                    };
                 },
                 not:function(dom,selector){
                     var notDom = $(selector);
