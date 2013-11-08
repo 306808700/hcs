@@ -1,0 +1,90 @@
+ul li{
+	padding: 0px;
+	margin: 0px;
+	list-style: none;
+}
+div.price_guess{
+	width: 990px;
+	margin: auto;
+	font-size: 12px;
+	position: relative;
+}
+.price_guess h2{
+	height: 129px;
+	background: url("http://gtms01.alicdn.com/tps/i1/T18CsKFX8bXXXNgh_h-990-128.jpg") no-repeat;
+	position: relative;
+	margin: 0px;
+	padding: 0px;
+}
+.price_guess h2 a{
+	position: absolute;
+	right: 27px;
+	bottom: 4px;
+	font-size: 0px;
+	display: block;
+	width: 80px;
+	height: 14px;
+	cursor: pointer;
+}
+.price_guess .list ul{
+	padding: 0px;
+	margin: 0px;
+	overflow: hidden;
+}
+.price_guess .list ul li{
+	float: left;
+	width: 190px;
+	height: 300px;
+	padding: 10px 15px;
+	position: relative;
+}
+.price_guess .list ul li .img{
+	width: 180px;
+	height: 210px;
+	text-align: center;
+}
+.price_guess .list ul li .logo{
+	width: 100px;
+	height: 40px;
+	position: absolute;
+	left: 15px;
+	top: 202px
+}
+.price_guess .list ul li .focus{
+	width: 100px;
+	height: 40px;
+	position: absolute;
+	top: 205px;
+	right: -2px;
+	background: url(http://gtms01.alicdn.com/tps/i1/T1Y3kDFlBXXXXKpMbn-74-27.jpg) no-repeat;
+}
+.price_guess .list ul li .text{
+	color: #333;
+	clear: both;
+	margin-top: 24px;
+}
+.price_guess .list ul li .button{
+	width: 180px;
+	height: 30px;
+	margin-top: 5px;
+	background: url(http://gtms01.alicdn.com/tps/i1/T1kIQzFclfXXcFWWTk-182-31.jpg);
+}
+.price_guess .control{
+	clear: both;
+}
+.price_guess .control .prev{
+	position: absolute;
+	top: 420px;
+	left: 0px;
+	background:#b2b2b2;
+	width:40px;
+	height:40px;
+}
+.price_guess .control .next{
+	position: absolute;
+	top: 420px;
+	right: 0px;
+	background:#b2b2b2;
+	width:40px;
+	height:40px;
+}

@@ -1,12 +1,25 @@
+ .wrap{
+	width: 1200px;
+	margin: auto;
+}
 .logo{
-	color: green;
-	font-size: 140px;
-	font-weight: bold;
+	font-size: 30px;
+	float: left;
+	color: #00af8d;
+	width: 130px;
 }
 .nav{
-	color: orange;
+	background: #272727;
+	color: #fff;
+	height: 40px;
+	line-height: 40px;
 }
 .nav li{
+	width: 70px;
 	float: left;
-	box-show: 1px float:left sdf
+	list-style: none;
+	text-align: center;
+}
+.nav li.on{
+	background: #00af8d;
 } 

@@ -5,24 +5,30 @@
 
 
 KISSY.ready(function(S){
-    S.IO.getJSON("config.json",function(config){
-        (function(S){
             var $ = S.all;
             var D = S.DOM;
             var DOMNUM = 0;
             var __HISTORY = {length:0};
             var __HISTORY_key;
+            var __CSS_COLOR_array = "";
+
+            localStorage.hcs_dev = false;
+
+
             function HCS(config){
                 this.config = config||{};
                 this.current = null;
                 this.init();
-                localStorage.hcs_dev = false;
             };
             HCS.prototype.init = function(first_argument) {
+
                 this.tool();
                 this.view();
                 this.event();
                 this.tool._addHistory();
+
+                
+                //this.plugin.kcopy(this);
             };
             HCS.prototype.view = function(first_argument) {
                 var self = this;
@@ -54,6 +60,7 @@ KISSY.ready(function(S){
                 this.$color = $(this.tpl.colorControl);
                 this.$wrap.append(this.$input).append(this.$history);
                 if(localStorage.hcs){
+                    console.log(localStorage.hcs_dev);
                     document.getElementsByTagName("html")[0].innerHTML = localStorage.hcs;
                     this.$tip.html(localStorage.hcs_path);
                 }
@@ -66,18 +73,8 @@ KISSY.ready(function(S){
                 var time = +new Date();
                 $("head").append('<link href="index.css?t='+time+'" rel="stylesheet" charset="utf-8" style="display:none !important " class="hcs_link">');
 
+                
                 $("head").append('<link rel="stylesheet" href="/hcs/codemirror-3.15/lib/codemirror.css" class="hcs_link">');
-
-                self.tool._importScript("/hcs/codemirror-3.15/lib/codemirror.js");
-                var mirrorKey = setInterval(function(){
-                    if(CodeMirror){
-                        clearInterval(mirrorKey);
-                        self.tool._importScript("/hcs/codemirror-3.15/mode/css/css.js");
-                    }
-                },17);
-                self.tool._importScript("/hcs/format/cssformat.js");
-
-
                 this.current = $("body");
                 this.view.current = function(){
                     $("html").all(".hcs_current")
@@ -85,6 +82,15 @@ KISSY.ready(function(S){
                         .removeAttr("contenteditable");
                     self.current.addClass("hcs_current");
                     self.current.attr('contenteditable',true);
+                    if($(window).scrollTop()>self.current.offset().top){
+                        $(window).scrollTop(self.current.offset().top+$(window).height()/2);
+                    }
+                    if(($(window).scrollTop()+$(window).height())<self.current.offset().top){
+                        $(window).scrollTop(self.current.offset().top-$(window).height()/2);
+                    }
+                    if(self.current.offset().top<$(window).scrollTop()){
+                        $(window).scrollTop(self.current.offset().top);   
+                    }
                 };
                 this.view.uncurrent = function(dom){
                     dom.all(".hcs_current")
@@ -127,10 +133,9 @@ KISSY.ready(function(S){
                     return "::before{content:'"+content+"';}";
                 }
                 this.view.dev = function(){
-
                     var temp ="";
                     S.each($(document).all("*"),function(dom,index){
-                        if($(dom)[0].tagName=="HTML"||$(dom)[0].tagName=="SCRIPT"||$(dom)[0].tagName=="HCS"||$(dom)[0].tagName=="HCSP"||$(dom).attr("class")=="hcs_input"||$(dom).attr("class")=="hcs_history_select"||$(dom).hasClass("hcs_link")){
+                        if($(dom)[0].tagName=="HTML"||$(dom)[0].tagName=="SCRIPT"||$(dom)[0].tagName=="HCS"||$(dom)[0].tagName=="HCSP"||$(dom).attr("class")=="hcs_input"||$(dom).attr("class")=="hcs_history_select"||$(dom).hasClass("hcs_link")||$(dom).hasClass("hcs_cssContent")){
                             return;
                         }
                         $(dom).attr("hcs",DOMNUM);DOMNUM++;
@@ -207,34 +212,48 @@ KISSY.ready(function(S){
                     });
                     list.html(list_li);
                     var first =  list.one(".hcs_cssList_li");
+                    var allli = list.all(".hcs_cssList_li");
                     
 
                     //    <script src="../addon/search/searchcursor.js"></script>
-    //<script src="../addon/search/match-highlighter.js"></script>
+                    //<script src="../addon/search/match-highlighter.js"></script>
                     function getCSS(linkid,href){
+
                         content.attr("linkid",linkid);
-                        S.IO.get(href+"?t="+self.tool._nowTime(),function(result){
-                            
-                            if(!result){
-                                result = "/* the new css */";
-                            }
-                            result = result.replace("/* the new css */","");
-                            result = cssbeautify(result,{
-                                indent:"  "
-                            });
-                            //result = result.replace(/;/g,";<br>    ").replace(/}/g,"}<br>    ").replace(/{/g,"{<br>    ");
-                            content.val(result);
-                            CodeMirror.fromTextArea(content[0], {
-                                lineNumbers: true,
-                                //highlightSelectionMatches: {showToken: /\w/},
-                                //styleActiveLine: true
-                            });
-                            $(".CodeMirror").on("keyup",function(){
-                                var el = $(this).one(".CodeMirror-code").all("pre");
-                                var str = "";
-                                S.each(el,function(dom){
-                                    str+=$(dom).text();
+                        content.val("");
+                        $(".CodeMirror").remove();
+
+                        new S.IO({
+                            url:href+"?t="+self.tool._nowTime(),
+                            success:function(result){
+                                if(!result){
+                                    result = "/* the new css */";
+                                }
+
+                                result = result.replace("/* the new css */","");
+                                result = cssbeautify(result,{
+                                    indent:"  "
                                 });
+                                content.val(result);
+                            },
+                            error:function(){
+
+                            },
+                            async:false
+                        });
+                        setTimeout(function(){
+                           //CodeMirror.fromTextArea(content[0], {
+                             //   lineNumbers: true
+                            //});
+                            //$(".CodeMirror").on("keyup",function(){
+                             content.on("keyup",function(){   
+                                //var el = $(this).one(".CodeMirror-code").all("pre");
+                                var el = $(this);
+                                var str = "";
+                                //S.each(el,function(dom){
+                                //    str+=$(dom).text();
+                                //});
+                                str = el.val();
                                 str = self.plugin.CSSdecode(str);
                                 function fn(){
                                     content.timekey = setTimeout(function(){
@@ -250,36 +269,22 @@ KISSY.ready(function(S){
                                     fn();
                                 }
                             });
-                        });
+                        },1);
+                        
                     }
                     if(first){
                         first.addClass("on");
                         getCSS(first.attr("linkid"),first.html());
                     }else{
                         alert("please import a css ");
-                        return;
-                        content.val("/* the new css */");
-                        content.removeAttr("contenteditable");
-                        CodeMirror.fromTextArea(content[0], {
-                            lineNumbers: true,
-                            //highlightSelectionMatches: {showToken: /\w/},
-                            //styleActiveLine: true,
-                        });
                     }
                     
-
-                    list.all(".hcs_cssList_li").on("click",function(){
-                        list.all(".hcs_cssList_li").removeClass("on");
+                    allli.on("click",function(){
+                        allli.removeClass("on");
                         $(this).addClass("on");
                         getCSS($(this).attr("linkid"),$(this).html());
                     });
 
-                    
-                    
-
-                    content.on("scroll",function(){
-                        return false;
-                    });
                     close.on("click",function(){
                         self.$cssDetail.remove();
                     });
@@ -309,15 +314,21 @@ KISSY.ready(function(S){
                     ]);
                     self.$cssDetail.appendTo($("html"));
                 };
-                this.view.linkcss = function(){
+                this.view.cssContent = function(callback){
+                    __CSS_COLOR_array = "";
                     S.each($("html").all("link"),function(dom){
                         if(!$(dom).hasClass("hcs_link")){
-                            S.IO.post($(dom).attr("href"),function(str){
-                                $(dom).html(str);
+                           new S.IO({
+                                url:$(dom).attr("href"),
+                                success:function(str){
+                                    __CSS_COLOR_array +=str;
+                                },
+                                async:false
                             });
                         }
                     });
-                };
+                }
+
                 this.view.formartCss = function(){
 
                 };
@@ -342,11 +353,18 @@ KISSY.ready(function(S){
                     $("html").append(str);
                 };
                 //this.view.linkcss();
-                if(localStorage.hcs_dev==true){
+                if(localStorage.hcs_dev == "true"){
+                    console.log("dev")
                     this.view.dev();
                 }
                 if(localStorage.hcs_img){
                     self.tool._setbg(localStorage.hcs_img);
+                    if(localStorage.hcs_bgXY){
+                        self.$background.css({
+                            left:localStorage.hcs_bgXY.split(",")[0],
+                            top:localStorage.hcs_bgXY.split(",")[1]
+                        });
+                    }
                 }
 
                 /* 收集link  href */
@@ -354,7 +372,7 @@ KISSY.ready(function(S){
             };
             HCS.prototype.event = function(first_argument) {
                 var self = this;
-                
+                self.plugin.forbidBackSpace();
                 this.$input.on("keyup",function(e){
                     if(e.keyCode == 13){
                         self.render($(this).val());
@@ -413,6 +431,18 @@ KISSY.ready(function(S){
                         return false;
                     }
                 }).fire("focus");
+                this.$input[0].onpaste = function(e){
+                    self.plugin.shotImg(e,function(img){
+                        S.IO.post("img.php",{code:img.src},function(res){
+                            if(self.current[0].tagName=="IMG"){
+                                self.current.attr("src",res);
+                            }else{
+                                self.current.append("<img src='"+res+"' />");
+                            }
+                            self.view.dev();
+                        });
+                    });
+                }
                 
                 self.$history.on("change",function(){
                     var val = $(this).val();
@@ -420,7 +450,19 @@ KISSY.ready(function(S){
                     __HISTORY_key = val;
                     self.init();
                 });
-
+                self.$bg.on("click",function(dom){
+                    if(self.$background.css("zIndex")==70){
+                       self.$background.css({
+                            "zIndex":-1,
+                            opacity:0.3
+                        }); 
+                    }else{
+                        self.$background.css({
+                            "zIndex":70,
+                            opacity:1
+                        });
+                    }
+                });
                 self.plugin.drag.apply(self.$bg,[
                     function(e){
                         // down
@@ -439,6 +481,7 @@ KISSY.ready(function(S){
 
                     },
                     function(){
+                        localStorage.hcs_bgXY = self.$background.offset().left+","+self.$background.offset().top;
                     }
                 ]);
 
@@ -452,16 +495,72 @@ KISSY.ready(function(S){
                     //localStorage.hcs_img_opacity = opacity;
                 });
 
+                self.$color.on("click",function(){
+                    //show color
+                    if($(".hcs_cssColor_list").length){
+                        $(".hcs_cssColor_list").remove();
+                        return;
+                    }
+                    self.view.cssContent();
+                    if(!__CSS_COLOR_array){
+                        return;
+                    }
+                    var colorArray = __CSS_COLOR_array.match(/#[\d\w]*/g);
+
+                        colorArray = self.plugin.distinctArray(colorArray);
+
+                    var hcsp = "<hcsp class='hcs_cssColor_list'>";
+                    for(var i=0;i<colorArray.length;i++){
+                        hcsp += "<hcsp class='hcs_cssColor_li' title='"+colorArray[i]+"' style='background-color:"+colorArray[i]+"'></hcsp>";
+                    }
+                    hcsp+="</hcsp>";
+
+                    var $hcsp = $(hcsp).appendTo(self.$color);
+
+
+                    $hcsp.css({
+                        width:colorArray.length*self.$color.width(),
+                        right:-colorArray.length*self.$color.width()
+                    });
+                    $hcsp.animate({
+                        right:self.$color.width()
+                    },1/3);
+                });
+
                 self.plugin.drag.apply(self.$color,[
                     function(e){
-                        
+                        var self = this;
+                        self.downKey = null;
+                        if(self.key){
+                            clearTimeout(self.key);
+                        }
+                        self.key = setTimeout(function(){
+                            self.downKey = "isdrag";
+                        },500);
+                    },  
+                    function(e){
+                        if(!this.downKey){
+                            return false;
+                        }
+                        var x = e.clientX-self.$background.offset().left;
+                        var y = e.clientY+$(window).scrollTop()-self.$background.offset().top;
+                        if(this.key){
+                            clearTimeout(this.key);
+                        }
+                        this.key = setTimeout(function(){
+                            self.plugin.getColor(x,y,function(color){
+                                self.$color.css({
+                                    background:color
+                                });
+                            });
+                        },200);
                     },
                     function(e){
-
-                    },
-                    function(e){
-                        var x = e.clientX;
-                        var y = e.clientY;
+                        if(!this.downKey){
+                            return false;
+                        }
+                        var x = e.clientX-self.$background.offset().left;
+                        var y = e.clientY+$(window).scrollTop()-self.$background.offset().top;
                         self.plugin.getColor(x,y,function(color){
                             self.$color.css({
                                 background:color
@@ -471,11 +570,10 @@ KISSY.ready(function(S){
                                     self.$color.css("background-color")
                                 )
                             );
-
-
                         });
                     }
                 ]);
+                
 
 
                 $(document).on("click",function(e){
@@ -648,7 +746,7 @@ KISSY.ready(function(S){
                     }
 
                     var temp = "<";
-                    var index = (str.indexOf(".")+1)||(str.indexOf("&")+1)||(str.indexOf("#")+1)||str.match(/[a-z]*/)[0].length+1;
+                    var index = (str.indexOf(".")+1)||(str.indexOf("&")+1)||(str.indexOf("#")+1)||str.match(/[a-z\d]*/)[0].length+1;
 
                     // 先把tagName取到
                     temp+=str.substring(0,index-1);
@@ -846,7 +944,7 @@ KISSY.ready(function(S){
 
                 
             };
-            HCS.prototype.render = function(value){
+            HCS.prototype.render = function(value,customerValue){
                 var self = this;
                 self.command = {
                     rship:["parent","children","next","prev"],
@@ -883,7 +981,10 @@ KISSY.ready(function(S){
                         return;
                     }
                     var cur;
-                    if(str.indexOf(">")!=-1){
+                    if(str.indexOf("'")==0){
+                        // 含有引号作为字符串看待
+                        cur = str.replace(/'/g,"");
+                    }else if(str.indexOf(">")!=-1){
                         var step = str.split(">");
                         cur = self.tool._getEl(step[0]);
                         var i = step.length-1;  // 2 
@@ -900,6 +1001,7 @@ KISSY.ready(function(S){
                         }
                         getDomList();
                     }else{
+                        console.log(str);
                         cur = self.tool._getEl(str);
                     }
                     self.current[arr[0]](cur);
@@ -927,6 +1029,16 @@ KISSY.ready(function(S){
                 if(arr[0]=="wrap"){
                     var cur = self.tool._getEl(arr[1]);
                     D.wrap(self.current,cur);
+                }
+                if(arr[0]=="not"){
+                    var cur = self.current;
+                    self.plugin.not(self.current,arr[1]);
+                    S.each(self.current,function(b,i){
+                        if(d==b){
+                            delete dom[i];
+                        }
+                    });
+                    self.current.not(arr[1])
                 }
                 if(arr[0]=="delete"){
                     var cur = self.current.parent();
@@ -956,6 +1068,7 @@ KISSY.ready(function(S){
                     this.view.dev();
                     this.tool._hideCss();
                     localStorage.hcs_dev = true;
+                    return;
                 }
                 if(arr[0]=="undev"){
                     this.view.undev($("html"));
@@ -966,9 +1079,7 @@ KISSY.ready(function(S){
                 }
                 if(arr[0]=="css"){
                     if(arr[1]){
-                        //if($("head").all("[href='"+arr[1]+"']").length>0){
-                         //   console.log(123);
-                        //}
+
                         var link = $("<link href='"+arr[1]+"' rel='stylesheet' />");
                         $("head").append(link);
                         S.IO.get(arr[1],function(str){
@@ -1028,8 +1139,12 @@ KISSY.ready(function(S){
                     if(arr[1]){
                         localStorage.hcs_path = arr[1];
                     }
-                    var content = encodeURIComponent("<!doctype html>\n<html>\n"+localStorage.hcs+"\n</html>");
-                    S.IO.post("save.php?title="+encodeURIComponent(localStorage.hcs_path)+"&content="+content);
+                    var content = style_html("<!doctype html>\n<html>\n"+localStorage.hcs+"\n</html>",1,'\t',80);
+                    //var content = "<!doctype html>\n<html>\n"+localStorage.hcs+"\n</html>";
+                    S.IO.post("save.php",{
+                        title:localStorage.hcs_path,
+                        content:content
+                    });
                     this.$tip.html(localStorage.hcs_path);
                     return;
                 }
@@ -1048,14 +1163,50 @@ KISSY.ready(function(S){
                         localStorage.hcs_path = arr[1];
                     }
                 }
+
+                if(arr[0]=="open"){
+                    if(arr[1]){
+                        var str = arr[1].replace("%value%",customerValue);
+
+                        window.open("open.php?url="+encodeURIComponent(str));
+                    }else{
+                        window.open(localStorage.hcs_path);
+                    }
+                }
+                if(arr[0]=="host"){
+                    window.open("host.php");
+                }
+
+                if(config.customerCommand){
+                    for(var i=0,l=config.customerCommand.length;i<l;i++){
+                        var obj = config.customerCommand[i];
+                        if(arr[0]==obj.name){
+                            self.render(obj.out,arr[1]);
+                        }
+                    }
+                }
+
                 if(arr[0].match(/^\d*$/)){
                     self.tool._setcur(self.current[arr[0]]);
                 }
                 if(localStorage.hcs_dev=="true"){
                     self.view.dev();
                 }
+
+
             };
             HCS.prototype.plugin = {
+                /* 数组去重复 */
+                distinctArray:function(arr){
+                    var obj={},temp=[];
+                    for(var i=0;i<arr.length;i++){
+                        if(!obj[arr[i]]){
+                            temp.push(arr[i]);
+                            obj[arr[i]] =true;
+                        }
+                    }
+                    return temp;
+                },
                 CSSdecode:function(code) { 
                     code = code.replace(/(\s){2,}/ig,'$1'); 
                     code = code.replace(/(\S)\s*\{/ig,'$1{\n'); 
@@ -1105,9 +1256,9 @@ KISSY.ready(function(S){
                         },
                         event:function(){
                             var self = this;
-                            $(window).on("resize",function(){
-                                self.view();
-                            });
+                            //$(window).on("resize",function(){
+                            //    self.view();
+                            //});
                             if(opts.modalClick){
                                 self.$overlay.on("click",function(){
                                     self.$overlay.remove();
@@ -1189,8 +1340,8 @@ KISSY.ready(function(S){
                     function draw(img) {
                         var _self = this;
                         var canvas = document.createElement("canvas");
-                        canvas.width = $(document).width();
-                        canvas.height = $(document).height();
+                        canvas.width = img.width;
+                        canvas.height = img.height;
                         var context = canvas.getContext("2d");
                         context.shadowBlur = 20;
                         context.shadowColor = "#DDDDDD";
@@ -1201,8 +1352,8 @@ KISSY.ready(function(S){
                        ////     console.log(i+":rgb("+pixel[i]+","+pixel[i+1]+","+pixel[i+2]+")");
                         //}
                         var canvasOffset = $(canvas).offset();
-                        var canvasX = Math.floor(x - canvasOffset.left);
-                        var canvasY = Math.floor(y - canvasOffset.top);
+                        var canvasX = Math.floor(x);
+                        var canvasY = Math.floor(y);
                         // 获取该点像素的数据
                         var imageData = context.getImageData(canvasX, canvasY, 1, 1);
                        // 获取该点像素数据
@@ -1211,10 +1362,43 @@ KISSY.ready(function(S){
                         callback(pixelColor);
                     }
                     var img = new Image();
-                    img.src = localStorage.hcs_img;
-                    img.onload = function () {
-                        draw(img);
-                    };
+                    if(localStorage.hcs_img){
+                        img.src = localStorage.hcs_img;
+                        img.onload = function () {
+                            draw(img);
+                        };
+                    }
+                },
+                kcopy:function(that){
+                    var self = that;
+                    S.Config.debug = true;
+                    if (S.Config.debug) {
+                        var srcPath = "/hcs";
+                        S.config({
+                            packages:[
+                                {
+                                    name:"gallery",
+                                    path:srcPath,
+                                    charset:"utf-8",
+                                    ignorePackageNameInUri:true
+                                }
+                            ]
+                        });
+                    }
+
+                    S.use('gallery/kcopy', function (S, Kcopy) {
+                        self.kcopy = new Kcopy("#abcde", {
+                            moviePath: "ZeroClipboard.swf",
+                            forceHandCursor: false,
+                            allowScriptAccess: "always"
+                        });
+                        $("#abcde").on("mouseover",function(){
+                            console.log($(this));
+                            self.kcopy.setCurrent($(this));
+                            self.kcopy.setText("1231313123");
+                            self.kcopy.setTitle("asdfdasfadsfad");
+                        });
+                    });
                 },
                 not:function(dom,selector){
                     var notDom = $(selector);
@@ -1226,10 +1410,48 @@ KISSY.ready(function(S){
                         });
                     });
                     return dom;
+                },
+                shotImg:function(e,callback){
+                    var clipboardData = e.clipboardData;
+                    if(clipboardData&&clipboardData.items){
+                        items = clipboardData.items;
+                        var item = items[0];
+                        if (item.kind == 'file' && item.type == 'image/png') {  
+                            var fileReader = new FileReader();  
+                              
+                            fileReader.onloadend = function (d) {  
+                                var d = this.result.substr( this.result.indexOf(',')+1);
+                                var img =  document.createElement("img");
+                                img.src = 'data:image/jpeg;base64,'+d;
+                                //area.append(img);
+                                callback(img);
+                                return;
+                            };
+                            fileReader.readAsDataURL(item.getAsFile());
+                        } 
+                    }
+                },
+                forbidBackSpace:function(){
+                    function fn(e) {  
+                        var ev = e || window.event; //获取event对象   
+                        var obj = ev.target || ev.srcElement; //获取事件源   
+                        var t = obj.type || obj.getAttribute('type'); //获取事件源类型   
+                        var vEditor = obj.contentEditable;
+                            vEditor = vEditor==="true"?true:false; 
+                        var flag1 = ev.keyCode == 8 && 
+                                    vEditor == false && 
+                                    t != "textarea" &&
+                                    t !="text" &&
+                                    t !="password";
+                        if (flag1) return false;  
+                    }
+
+                    //禁止后退键 作用于Firefox、Opera  
+                    document.onkeypress = fn;  
+                    //禁止后退键  作用于IE、Chrome  
+                    document.onkeydown = fn; 
                 }
             };
 
             new HCS();
-        })(S);
-    });
 });
