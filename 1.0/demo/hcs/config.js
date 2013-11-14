@@ -20,8 +20,32 @@ var config = {
 			"name":"fanyi",
 			"out":"open http://fanyi.baidu.com/#zh/en/%value%"
 		}
+		
 	],
 	"grid":"960*12*center",
 	"jsEditorTheme":"blackboard",
-	"browser":"ie8+,chrome,firefox"
+	"browser":"ie8+,chrome,firefox",
+	"customerKey":[
+		{
+			"name":"alt+d",
+			"out":"delete "
+		},
+		{
+			"name":"ctrl+s",
+			"out":"save "
+		},
+		{
+			"name":"alt+q",
+			"out":"dev"
+		},
+		{
+			"name":"alt+c",
+			"out":"copy"
+		},
+		{
+			"name":"alt+v",
+			"out":"paste"
+		}
+
+	]
 }

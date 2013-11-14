@@ -98,9 +98,36 @@ body{
 	cursor: pointer;
 }
 
+
+/*
+.tip {
+    margin: 0 auto;
+    width: 500px;
+    height: 100px;
+    margin-top: -100px;
+    background-color: #8c0;
+    -webkit-transition: all 0.5s;
+    transition: all 0.5s;
+}
+.tip-show {
+    -webkit-transform: translate3d(0,100%,0);
+    transform: translate3d(0,100%,0);
+}
+
+*/
 /* css end */
-
-
+.hcs_msg{
+	position: fixed;
+	top: 30%;
+	left: 50%;
+	margin-left: -50px;
+	width: 100px;
+	background: orange;
+	color: #fff;
+	border-radius: 5px;
+	padding: 5px;
+	text-align: center;
+}
 .hcs_tip{
 	position: fixed;
 	top: 0px;
@@ -285,11 +312,12 @@ body.hcs_dev{
 	height: 0px !important;
 	overflow: hidden !important;
 }
-.hcs_fold *{
+.hcs_fold .hcs_dev{
 	display: none !important;
 }
 .hcs_fold::before{
 	background: green !important;
+	color: #fff !important;
 }
 /*
 -webkit-transition: opacity 0.3s ease;
