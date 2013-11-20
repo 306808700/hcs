@@ -21,4 +21,7 @@
 	window.onload = function(){
 		document.getElementById("web").src = "<?php echo $url ?>";
 	}
+/*	setInterval(function(){
+		document.getElementById("web").src = document.getElementById("web").src;
+	},5000);*/
 </script>

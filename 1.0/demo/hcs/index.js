@@ -50,7 +50,8 @@ KISSY.ready(function(S){
                 <hcsp class='hcs_cssClose'>×</hcsp>\
                 <hcsp class='hcs_cssDrag'>css</hcsp>\
             </hcsp>",
-            colorControl:"<hcsp class='hcs_color'>CO</hcsp>"
+            colorControl:"<hcsp class='hcs_color'>CO</hcsp>",
+            chat:"<hcsp class='hcs_chat></hcsp>"
         };
 
         this.$wrap = $(this.tpl.wrap);
@@ -61,8 +62,8 @@ KISSY.ready(function(S){
         this.$bg = $(this.tpl.bgControl);
         this.$color = $(this.tpl.colorControl);
         this.$wrap.append(this.$input).append(this.$history);
+        this.$wrap.append(this.tpl.chat);
         if(localStorage.hcs){
-            console.log(localStorage.hcs_dev);
             document.getElementsByTagName("html")[0].innerHTML = localStorage.hcs;
             this.$tip.html(localStorage.hcs_path);
         }
@@ -76,7 +77,7 @@ KISSY.ready(function(S){
         $("head").prepend('<link href="index.css?t='+time+'" rel="stylesheet" charset="utf-8" style="display:none !important " class="hcs_link">');
 
         
-        $("head").prepend('<link rel="stylesheet" href="/hcs/codemirror-3.15/lib/codemirror.css" class="hcs_link">');
+        //$("head").prepend('<link rel="stylesheet" href="/hcs/codemirror-3.15/lib/codemirror.css" class="hcs_link">');
         this.current = $("body");
         this.view.current = function(){
             $("html").all(".hcs_current")
@@ -84,6 +85,7 @@ KISSY.ready(function(S){
                 .removeAttr("contenteditable");
             self.current.addClass("hcs_current");
             self.current.attr('contenteditable',true);
+            /*
             if($(window).scrollTop()>self.current.offset().top){
                 $(window).scrollTop(self.current.offset().top+$(window).height()/2);
             }
@@ -93,6 +95,7 @@ KISSY.ready(function(S){
             if(self.current.offset().top<$(window).scrollTop()){
                 $(window).scrollTop(self.current.offset().top);   
             }
+            */
         };
         this.view.uncurrent = function(dom){
             dom.all(".hcs_current")
@@ -153,10 +156,15 @@ KISSY.ready(function(S){
             $style.html(temp);
             self.view.current();
             $("html").addClass('hcs_dev');
+
+            $("html").all("a").on("click",function(e){
+                e.preventDefault();
+            });
         };
         this.view.undev = function(dom){
             self.view.uncurrent(dom);
             dom.all(".hcs_dev").removeClass("hcs_dev");
+            dom.all(".hcs_fold").removeClass("hcs_fold");
             dom.all(".hcs_dev_span").remove();
             dom.all("hcs").remove();
             dom.all(".hcs_style").remove();
@@ -278,7 +286,13 @@ KISSY.ready(function(S){
                 first.addClass("on");
                 getCSS(first.attr("linkid"),first.html());
             }else{
-                alert("please import a css ");
+                var result = ansyCss($("body")).join("{}")+"{}";
+                    result = cssbeautify(result,{
+                        indent:"  "
+                    });
+                    content.val(result);
+                //alert("please import a css ");
+                //return;
             }
             
             allli.on("click",function(){
@@ -516,7 +530,7 @@ KISSY.ready(function(S){
             if(!__CSS_COLOR_array){
                 return;
             }
-            var colorArray = __CSS_COLOR_array.match(/#[\d\w]*/g);
+            var colorArray = __CSS_COLOR_array.match(/(#[\da-zA-Z]*)|(red|blue)|(rgb\([\d,\s]*\))/g);
 
                 colorArray = self.plugin.distinctArray(colorArray);
 
@@ -970,7 +984,14 @@ KISSY.ready(function(S){
         
 
         var arr = value.split(" ");
-
+        if(arr[0]=="unchat"){
+            localStorage.hcs_chat = false;
+            self.chat = null;
+            self.$input.attr("placeholder",localStorage.hcs_placeholder);
+        }
+        if(localStorage.hcs_chat=="true"){
+            new S.io.post("long.php",{msg:value});
+        }
         if(S.inArray(arr[0],self.command.rship)){
             // 通过亲属关系得到指定对象
             self.tool._setcur(arr[0],"relative");
@@ -1082,6 +1103,12 @@ KISSY.ready(function(S){
             var newDom = self._copy.clone(true);
             self.current.append(newDom);
         }
+        if(arr[0]=="down"){
+            new S.IO({
+                url:"down.php",
+                data:{content:"content=data:text/paint; utf-8," + encodeURIComponent(localStorage.hcs)}
+            });
+        }
         if(arr[0]=="dev"){
             if(localStorage.hcs_dev == "true"){
                 this.render("undev");
@@ -1102,6 +1129,9 @@ KISSY.ready(function(S){
             return;
         }
         if(arr[0]=="css"){
+            if(localStorage.hcs_dev=="true"){
+                return false;
+            }
             if(arr[1]){
 
                 var link = $("<link href='"+arr[1]+"' rel='stylesheet' />");
@@ -1110,6 +1140,10 @@ KISSY.ready(function(S){
                 });
                 self.tool._setcur(link);
             }else{
+                if(self.$cssDetail&&self.$cssDetail.css("display")!="none"){
+                    self.$cssDetail.hide();
+                    return;
+                }
                 //if(localStorage.hcs_dev=="false"){
                     self.tool._showCss();
                 //}
@@ -1152,8 +1186,35 @@ KISSY.ready(function(S){
             });
             delete localStorage.hcs_img;
         }
+        if(arr[0]=="chat"){
+            var timestamp = 0;
+            (function longConect(msg){
+                self.chat = new S.IO({
+                    url:"long.php",
+                    type:"POST",
+                    data:{timestamp:timestamp,msg:msg},
+                    success:function(res){
+                        eval('var res = '+res);
+                        console.log(res.msg);
+                        timestamp = res.timestamp;
+                    },
+                    complete:function(){
+                        setTimeout(function(){
+                            longConect();
+                        },200);
+                    }
+                });
+            })();
+            localStorage.hcs_placeholder = self.$input.attr("placeholder");
+            self.$input.attr("placeholder","聊:");
+            localStorage.hcs_chat = true;
+
+        }
+        
         if(arr[0]=="reset"){
             delete localStorage.hcs;
+            delete localStorage.hcs_img;
+            delete localStorage.hcs_path;
             window.onbeforeunload = null;
             window.location.href = window.location.href;
         }
@@ -1182,10 +1243,12 @@ KISSY.ready(function(S){
                     localStorage.hcs = html;
                     $("html").html(localStorage.hcs);
                     self.$tip.html(localStorage.hcs_path);
+                    console.log(self);
                     self.init();
                 }
             );
             localStorage.hcs_path = path
+            self.init();
         }
 
         if(arr[0]=="open"){
@@ -1194,7 +1257,7 @@ KISSY.ready(function(S){
 
                 window.open("open.php?url="+encodeURIComponent(str));
             }else{
-                window.open(localStorage.hcs_path);
+                window.open("open.php?url="+localStorage.hcs_path);
             }
         }
         if(arr[0]=="host"){

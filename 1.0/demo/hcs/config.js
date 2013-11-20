@@ -45,7 +45,18 @@ var config = {
 		{
 			"name":"alt+v",
 			"out":"paste"
+		},
+		{
+			"name":"shift+c",
+			"out":"css"
+		},
+		{
+			"name":"f1",
+			"out":"open"
+		},
+		{
+			"name":"ctrl+d",
+			"out":"down"
 		}
-
 	]
 }
