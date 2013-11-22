@@ -1,0 +1,42 @@
+<?php
+header("Content-type: text/html; charset=utf-8");
+$filename  = 'data.json';
+
+$s = new SaeStorage();
+
+// 消息都储存在这个文件中
+$msg = isset($_REQUEST['msg']) ? $_REQUEST['msg'] : '';
+ 
+if ($msg != ''){
+	//file_put_contents($filename,$msg);
+	$s->write('chat', $filename,$msg);
+	$data = $s->read('chat', $filename);
+	print_r($data);
+	exit;
+}
+
+// 不停的循环，直到储存消息的文件被修改
+$lastmodif    = isset($_REQUEST['timestamp']) ? $_REQUEST['timestamp'] : 0;
+/*
+//$opt = $s->getAttr('chat',$filename);
+//print_r($opt);
+//$currentmodif = $attr["md5sum"];
+
+//echo $currentmodif;
+
+
+while ($currentmodif!=$lastmodif){ // 如果数据文件已经被修改
+	//usleep(100000); // 100ms暂停 缓解CPU压力
+	//clearstatcache(); //清除缓存信息
+	$attr = $s->getAttr('chat',$filename);
+	$currentmodif = $attr["md5sum"];
+}
+ 
+// 返回json数组
+$response = array();
+$response['msg']       = urldecode($s->read('chat', $filename));
+$response['timestamp'] = $currentmodif;
+echo json_encode($response); 
+flush();
+ */
+?>

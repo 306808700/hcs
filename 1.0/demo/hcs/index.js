@@ -1,10 +1,33 @@
 /*
     html simple coding
     @auth changyuan.lcy
+
+    @log 
+        方针：能让机器去完成的就让机器去完成。
+        
+        前端工作流程：
+
+            设计稿，切图，html结构，css，js
+
+            PSD ==> HTML ==> CSS ==> JS
+        HCS 能在哪个环节上面做文章，先从简单的地方入手。
+        
+        图像识别==\\==
+
+        简化HTML结构
+
+
+
+        1，解决了什么问题？
+        2，方便了什么？
+        3，简化了什么步骤（高手总是让复杂的事情变简单）
+        4，
 */
 
 
 KISSY.ready(function(S){
+
+
 
     var $ = S.all;
     var D = S.DOM;
@@ -51,7 +74,20 @@ KISSY.ready(function(S){
                 <hcsp class='hcs_cssDrag'>css</hcsp>\
             </hcsp>",
             colorControl:"<hcsp class='hcs_color'>CO</hcsp>",
-            chat:"<hcsp class='hcs_chat></hcsp>"
+            chat:"<hcsp class='hcs_chat></hcsp>",
+            welcome:"<hcsp class='hcs_welcome'>\
+                <h2>HCS，基于Chrome的命令行HTML编辑工具</h2>\
+                <hcsp class='hcs_untitled button'><hcsp class='hcs_untitled_text'><span>新建空白页</span><span>untitled.html</span></hcsp></hcsp>\
+                <hcsp class='hcs_todir button'><hcsp class='hcs_todir_text'><span>浏览目录</span><span>browse directory</span></hcsp></hcsp>\
+            </hcsp>",
+            dir:"<hcsp class='hcs_dir'>\
+                <hcsp class='hcs_goback button'>返回</hcsp>\
+                <hcsp class='hcs_dir_input'>\
+                    <input type='text' placeholder='例如  html/index.html' /><hcsp class='hcs_dir_add button'>添加</hcsp>\
+                </hcsp>\
+                <hcsp class='hcs_dir_list'></hcsp>\
+            </hcsp>",
+            modal:"<hcsp class='hcs_modal'></hcsp>"
         };
 
         this.$wrap = $(this.tpl.wrap);
@@ -61,21 +97,12 @@ KISSY.ready(function(S){
         this.$background = $(this.tpl.background);
         this.$bg = $(this.tpl.bgControl);
         this.$color = $(this.tpl.colorControl);
+        this.$welcome = $(this.tpl.welcome);
+        this.$dir = $(this.tpl.dir);
         this.$wrap.append(this.$input).append(this.$history);
         this.$wrap.append(this.tpl.chat);
-        if(localStorage.hcs){
-            document.getElementsByTagName("html")[0].innerHTML = localStorage.hcs;
-            this.$tip.html(localStorage.hcs_path);
-        }
 
-        if($("hcsp").length==0){
-            $("body").after(this.$wrap).after($(this.tpl.place))
-            .after(this.$tip).after(self.$background).after(self.$bg)
-            .after(this.$color);
-        }
-        var time = +new Date();
-        $("head").prepend('<link href="index.css?t='+time+'" rel="stylesheet" charset="utf-8" style="display:none !important " class="hcs_link">');
-
+        this.$modal = $(this.tpl.modal);
         
         //$("head").prepend('<link rel="stylesheet" href="/hcs/codemirror-3.15/lib/codemirror.css" class="hcs_link">');
         this.current = $("body");
@@ -216,8 +243,8 @@ KISSY.ready(function(S){
                     return;
                 }
                 var href = $(dom).attr("href");
+                $(dom).attr("linkid",index);
                 href = href.split("?")[0];
-                temp[index] = $(dom);
                 list_li+="<hcsp class='hcs_cssList_li' linkid='"+index+"'>"+href+"</hcsp>";
             });
             list.html(list_li);
@@ -251,6 +278,11 @@ KISSY.ready(function(S){
                     },
                     async:false
                 });
+                bindEdiorSave();
+                
+            }
+            function bindEdiorSave(){
+
                 setTimeout(function(){
                    //CodeMirror.fromTextArea(content[0], {
                      //   lineNumbers: true
@@ -268,7 +300,7 @@ KISSY.ready(function(S){
                         function fn(){
                             content.timekey = setTimeout(function(){
                                 var linkid = content.attr("linkid");
-                                self.tool._saveCss(temp[linkid],str);
+                                self.tool._saveCss($("[linkid="+linkid+"]"),str);
                                 delete content.timekey;
                             },300);
                         }
@@ -280,17 +312,30 @@ KISSY.ready(function(S){
                         }
                     });
                 },1);
-                
             }
             if(first){
                 first.addClass("on");
                 getCSS(first.attr("linkid"),first.html());
             }else{
-                var result = ansyCss($("body")).join("{}")+"{}";
+                list.append("<hcsp class='hcs_cssList_li' linkid='0'><input type='text' class='hcs_cssList_input' placeholder='请取个名字' /></hcsp>")
+                var arr = ansyCss($("body"));
+                if(arr.length>0){
+                    var result = arr.join("{}")+"{}";
                     result = cssbeautify(result,{
                         indent:"  "
                     });
                     content.val(result);
+                }
+                list.one("input").fire("focus").on("blur",function(){
+                    var val = $(this).val();
+                    if(val!=""){
+                        $(this).parent().html(val).addClass("on");
+                        var link = self.tool._addLink(val,0);
+                        self.tool._saveCss(link,result);
+                        content.attr('linkid',0);
+                        bindEdiorSave();
+                    }
+                });
                 //alert("please import a css ");
                 //return;
             }
@@ -344,9 +389,7 @@ KISSY.ready(function(S){
                 }
             });
         }
-
         this.view.formartCss = function(){
-
         };
         this.view.grid = function(grid){
             $(".hcs_gird").remove();
@@ -368,9 +411,232 @@ KISSY.ready(function(S){
             str+='</hcsp>';
             $("html").append(str);
         };
+        this.view.welcome = function(){
+            self.$welcome.one(".hcs_untitled").on("click",function(){
+                localStorage.hcs_path = "html/untitled.html";
+                self.$tip.html(localStorage.hcs_path);
+                self.$welcome.remove();
+                self.$modal.remove();
+                //self.render("save");
+            });
+            self.$welcome.one(".hcs_todir").on("click",function(){
+                self.view.dir();
+            });
+            $("body").after(self.$modal);
+        };
+        this.view.dir = function(){
+            var data;
+            var editing = false;
+
+            function get(val,callback){
+                new S.IO({
+                    url:val,
+                    success:function(res){
+                        callback(res);
+                    }
+                });
+            }
+            function del(val){
+                new S.IO({
+                    url:"",
+                    data:{path:val}
+
+                });
+            }
+            function edit(val){
+                new S.IO({
+                    url:"",
+                    data:{path:val}
+                });
+            }
+            function dir_date(str){
+                var arr = [];
+                
+                if(str){
+                    for(var i=0,len = data.length;i<len;i++){
+                        if(data[i].match(str)){
+                            arr.push(data[i]);
+                        }
+                    }
+                }else{
+                    for(var i=0,len = data.length;i<len;i++){
+                        var temp;
+                        if(data[i].indexOf("/")!=-1){
+                            temp = data[i].split("/")[0];
+                        }else{
+                            temp = data[i];
+                        }
+                        if(!S.inArray(temp,arr)){
+                            arr.push(temp);
+                        }
+                    }
+                }
+                return arr;
+            }
+            function setList(val){
+                var arr = dir_date(val);
+                var str = "";
+                
+                for(var i=0,len=arr.length;i<len;i++){
+                    var fold = "";
+                    if(arr[i].indexOf(".")==-1){
+                        fold = "fold";
+                    }
+                    str+="<hcsp class='hcs_dir_list_li "+fold+"'><span>"+arr[i]+"</span><op><i class='hcs_dir_save'>save</i><i class='hcs_dir_edit'>edit</i><i class='hcs_dir_del'>del</i></op></hcsp>";
+                }
+                list.html(str);
+                bind();
+            }
+            function bind(){
+                list.all("span").on("click",function(){
+                    var val = $(this).html();
+                    if($(this).parent().hasClass("fold")){
+                        input.val(val+"/").fire("keyup").fire("focus");
+                    }else{
+                        if(confirm("确定加载这个文件吗？")){
+                            get(val,function(res){
+                                localStorage.hcs_path = val;
+                                self.$dir.hide();
+                                self.$modal.remove();
+                                localStorage.hcs = res;
+                                self.init();
+                            });
+                        }
+                    }
+                });
+                list.children().on("mouseenter",function(){
+                    if(editing){
+                        return;
+                    }
+                    $(this).children("op").show();
+                    $(this).addClass("hover");
+                });
+                list.children().on("mouseleave",function(){
+                    if(editing){
+                        return;
+                    }
+                    $(this).children("op").hide();
+                    $(this).removeClass("hover");
+                });
+                list.all(".hcs_dir_del").on("click",function(e){
+                    var val = $(this).parent().parent().one("span").text();
+                    $(this).remove();
+                    del(val);
+                    e.stopPropagation();  
+                });
+                list.all(".hcs_dir_edit").on("click",function(e){
+                    
+                    var span = $(this).parent().parent().one("span");
+                    var val = span.text();
+                    var input = $("<input type='text' value='"+val+"' />");
+                    span.after(input);
+                    input.fire("focus");
+                    input.on("blur",function(){
+                        $(this).parent().one(".hcs_dir_save").fire("click");
+                    });
+                    span.hide();
+                    $(this).prev().show();
+                    editing = true;
+                    e.stopPropagation();  
+                    //del(val);
+                });
+                list.all(".hcs_dir_save").on("click",function(e){
+                    var input = $(this).parent().parent().one("input");
+                    var val = input.val();
+                    input.prev().show();
+                    input.remove();
+                    $(this).next().show();
+                    edit(val);
+                    $(this).hide();
+                    e.stopPropagation();  
+                    editing = false;
+                });
+
+            }
+
+
+            var btn = self.$dir.one(".hcs_dir_input").one(".hcs_dir_add");
+            var list = self.$dir.one(".hcs_dir_list");
+            var input = self.$dir.one(".hcs_dir_input").one("input");
+
+            btn.on("click",function(){
+                var val = $(this).prev().val();
+                if(!S.inArray(val,data)){
+                    data.push(val);
+                }
+                setList(val);
+            });
+            input.on("keyup",function(){
+                var val = $(this).val();
+                if(this.key){
+                    clearTimeout(this.key);
+                }
+                this.key = setTimeout(function(){
+                    setList(val);
+                },300);
+                
+            });
+            self.$dir.one(".hcs_goback").hide().on("click",function(){
+                self.$dir.hide();
+                self.$welcome.show();
+                self.$welcome.animate({
+                    height:"200px"
+                },1/6);
+            });
+            self.$welcome.animate({
+                height:0
+            },1/5,"",function(){
+                self.$welcome.hide();
+                self.$dir.show().css("height",0).animate({
+                    height:280
+                },1/5,"",function(){
+                    self.$dir.one(".hcs_dir_input").one("input").fire("focus");
+                });
+                self.$dir.one(".hcs_goback").fadeIn();
+            });
+            (function dirdata(){
+                data = [
+                "html/a.html",
+                "html/b.html",
+                "js/a.js",
+                "js/b.js",
+                "index.html",
+                "index.js",
+                "index.css",
+                "html.html"
+            ];
+            setList("");
+            return;
+                new S.IO({
+                    url:"",
+                    success:function(res){
+                        data = res.data;
+                        setList("");
+                    }
+                });
+            })();
+            $("body").after(self.$modal);
+        };
         //this.view.linkcss();
+
+
+        if(localStorage.hcs){
+            document.getElementsByTagName("html")[0].innerHTML = localStorage.hcs;
+            this.$tip.html(localStorage.hcs_path);
+        }else{
+            $("body").after(this.$welcome).after(this.$dir);
+            self.view.welcome();
+        }
+    
+        $("body").after(this.$wrap).after($(this.tpl.place))
+        .after(this.$tip).after(self.$background).after(self.$bg)
+        .after(this.$color);
+        
+        
+        var time = +new Date();
+        $("head").prepend('<link href="index.css?t='+time+'" rel="stylesheet" charset="utf-8" style="display:none !important " class="hcs_link">');
+
         if(localStorage.hcs_dev == "true"){
-            console.log("dev")
             this.view.dev();
         }
         if(localStorage.hcs_img){
@@ -635,6 +901,9 @@ KISSY.ready(function(S){
     HCS.prototype.tool = function(){
         var self = this;
         self._linkArr = [];
+        self.tool._addLink = function(val,id){
+            $("head").append("<link linkid='"+id+"' href='"+val+"' type='stylesheet'></link>")
+        };
         self.tool._selectLink = function(){
             S.each($("head").all("link"),function(dom){
                 if(!$(dom).hasClass("hcs_link")){
@@ -1141,12 +1410,13 @@ KISSY.ready(function(S){
                 self.tool._setcur(link);
             }else{
                 if(self.$cssDetail&&self.$cssDetail.css("display")!="none"){
-                    self.$cssDetail.hide();
-                    return;
-                }
+                    self.$cssDetail.remove();
+                    self.$cssDetail = null;
+                }else{
                 //if(localStorage.hcs_dev=="false"){
                     self.tool._showCss();
                 //}
+                }
             }
         }
         if(arr[0]=="js"){
@@ -1195,7 +1465,6 @@ KISSY.ready(function(S){
                     data:{timestamp:timestamp,msg:msg},
                     success:function(res){
                         eval('var res = '+res);
-                        console.log(res.msg);
                         timestamp = res.timestamp;
                     },
                     complete:function(){
@@ -1243,7 +1512,6 @@ KISSY.ready(function(S){
                     localStorage.hcs = html;
                     $("html").html(localStorage.hcs);
                     self.$tip.html(localStorage.hcs_path);
-                    console.log(self);
                     self.init();
                 }
             );
@@ -1498,7 +1766,6 @@ KISSY.ready(function(S){
                     allowScriptAccess: "always"
                 });
                 $("#abcde").on("mouseover",function(){
-                    console.log($(this));
                     self.kcopy.setCurrent($(this));
                     self.kcopy.setText("1231313123");
                     self.kcopy.setTitle("asdfdasfadsfad");
