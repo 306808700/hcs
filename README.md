@@ -2,7 +2,7 @@
 
 * 版本：1.0
 * 教程：[http://gallery.kissyui.com/hcs/1.0/guide/index.html](http://gallery.kissyui.com/hcs/1.0/guide/index.html)
-* demo：[http://gallery.kissyui.com/hcs/1.0/demo/hcs/index.html](http://gallery.kissyui.com/hcs/1.0/demo/hcs/index.html)
+* demo：[http://hcsweb.sinaapp.com/hcs/)
 
 
 ## changelog
